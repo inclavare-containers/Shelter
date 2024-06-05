@@ -1,6 +1,9 @@
-cp init $DESTDIR/
 mkdir -p $DESTDIR/etc/init.d
-cp rcS $DESTDIR/etc/init.d/
 mkdir -p $DESTDIR/etc/acpi
+mkdir -p $DESTDIR/etc/modprobe.d
+
+cp init $DESTDIR/
+cp rcS $DESTDIR/etc/init.d/
 cp ./conf/acpid.conf $DESTDIR/etc/
 cp ./conf/power $DESTDIR/etc/acpi/
+cp ./conf/vmw_vsock_vmci_transport.conf $DESTDIR/etc/modprobe.d/
