@@ -1,1 +1,6 @@
-cp init $DESTDIR/init
+cp init $DESTDIR/
+mkdir -p $DESTDIR/etc/init.d
+cp rcS $DESTDIR/etc/init.d/
+mkdir -p $DESTDIR/etc/acpi
+cp ./conf/acpid.conf $DESTDIR/etc/
+cp ./conf/power $DESTDIR/etc/acpi/

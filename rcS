@@ -1,0 +1,5 @@
+#!/bin/sh
+
+acpid
+
+socat vsock-l:4321,reuseaddr,fork "exec:xargs -0 sh -c" &

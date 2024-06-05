@@ -5,8 +5,8 @@ mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 #echo "/sbin/mdev" > /proc/sys/kernel/hotplug
 #echo "hello linux"
-modprobe -a vhost_vsock virtio_pci vmw_vsock_virtio_transport
+modprobe -a vhost_vsock virtio_pci vmw_vsock_virtio_transport button evdev
 mdev -s
 mkdir /dev/pts
 mount -t devpts devpts /dev/pts
-exec /bin/busybox sh
+exec /bin/busybox init
