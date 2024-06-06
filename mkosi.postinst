@@ -1,0 +1,1 @@
+ln -sr $BUILDROOT/usr/bin/busybox $BUILDROOT/init

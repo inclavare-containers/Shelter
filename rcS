@@ -1,5 +1,20 @@
 #!/bin/sh
+/usr/bin/busybox --install -s /usr/bin/
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mkdir /dev/pts
+mount -t devpts devpts /dev/pts
+
+mdev -d
+
+modprobe -a vhost_vsock vmw_vsock_virtio_transport
+
+find /sys/ -name modalias -print0 | \
+    xargs -0 sort -u | \
+    tr '\n' '\0' | \
+    xargs -0 modprobe -abq
 
 acpid
 
-socat vsock-l:4321,reuseaddr,fork "exec:xargs -0 sh -c" &
+socat vsock-l:4321,reuseaddr,fork "exec:'xargs -0 sh -c',stderr" &
