@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+kernel_version="$(uname -r)"
+
+if [ -d "${BUILDROOT}/usr/lib/modules/${kernel_version}/build" ]; then
+    rm -r "${BUILDROOT}/usr/lib/modules/${kernel_version}/build"
+fi
+
+if [ -f "${BUILDROOT}/usr/lib/modules/${kernel_version}/vmlinuz" ]; then
+    mv "${BUILDROOT}/usr/lib/modules/${kernel_version}/vmlinuz" ./image.vmlinuz
+fi

@@ -16,3 +16,9 @@ Cargo.lock
 image
 image.cpio.*
 image.vmlinuz
+
+binary
+*.pdf
+*.md
+
+.cache

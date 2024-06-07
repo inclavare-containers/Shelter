@@ -8,12 +8,12 @@ mount -t devpts devpts /dev/pts
 
 mdev -d
 
-modprobe -a vhost_vsock vmw_vsock_virtio_transport
+/usr/bin/modprobe -a vhost_vsock vmw_vsock_virtio_transport
 
 find /sys/ -name modalias -print0 | \
     xargs -0 sort -u | \
     tr '\n' '\0' | \
-    xargs -0 modprobe -abq
+    xargs -0 /usr/bin/modprobe -abq
 
 acpid
 
