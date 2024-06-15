@@ -6,5 +6,5 @@ if [ -d "${BUILDROOT}/usr/lib/modules/${kernel_version}/build" ]; then
 fi
 
 if [ -f "${BUILDROOT}/usr/lib/modules/${kernel_version}/vmlinuz" ]; then
-    mv "${BUILDROOT}/usr/lib/modules/${kernel_version}/vmlinuz" ./image.vmlinuz
+    rm "${BUILDROOT}/usr/lib/modules/${kernel_version}/vmlinuz"
 fi

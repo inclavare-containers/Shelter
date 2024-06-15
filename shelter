@@ -1,34 +1,23 @@
 #!/usr/bin/env bash
 conf="build.conf"
 dest=".cache"
-binaries=()
-files=()
 
-if [ ! -f $conf ]; then
-    echo "Error: build.conf didn't exist"
-    exit 0
-fi
+# Function: Display help information
+show_help() {
+    cat <<EOF
+Usage: shelter {subcommand}
+Available SubCommands:
+    build   Build the shelter
+    start   Start the shelter
+    stop    Stop the shelter
+    exec    exec a shell commad in shelter
+    status  Query the status of shelter
+    clean   Remove output image and cache
 
-# Read options from the configuration file
-while IFS= read -r line || [ -n "$line" ]; do
-    # Trim leading and trailing whitespace
-    line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-    # Check line content and extract values
-    if [[ $line == binary=* ]]; then
-        # Remove binary= and parentheses
-        line=$(echo "$line" | sed 's/^binary=//;s/[()]//g')
-        # Split into an array and add to binaries array
-        IFS=' ' read -r -a binary_array <<< "$line"
-        binaries+=("${binary_array[@]}")
-    elif [[ $line == file=* ]]; then
-        # Remove file= and parentheses
-        line=$(echo "$line" | sed 's/^file=//;s/[()]//g')
-        # Split into an array and add to files array
-        IFS=' ' read -r -a file_array <<< "$line"
-        files+=("${file_array[@]}")
-    fi
-done < "$conf"
+Options:
+    -h, --help  Show this help message and exit
+EOF
+}
 
 add_dir() {
     local dir_path=$1
@@ -101,15 +90,154 @@ copy_sodeps() {
     done
 }
 
-if [ ! -d $dest ]; then
-    mkdir $dest
+build() {
+    local binaries=()
+    local files=()
+
+    if [ ! -f $conf ]; then
+        echo "Error: build.conf didn't exist"
+        exit 0
+    fi
+    
+    # Read options from the configuration file
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Trim leading and trailing whitespace
+        line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+        # Check line content and extract values
+        if [[ $line == binary=* ]]; then
+            # Remove binary= and parentheses
+            line=$(echo "$line" | sed 's/^binary=//;s/[()]//g')
+            # Split into an array and add to binaries array
+            IFS=' ' read -r -a binary_array <<< "$line"
+            binaries+=("${binary_array[@]}")
+        elif [[ $line == file=* ]]; then
+            # Remove file= and parentheses
+            line=$(echo "$line" | sed 's/^file=//;s/[()]//g')
+            # Split into an array and add to files array
+            IFS=' ' read -r -a file_array <<< "$line"
+            files+=("${file_array[@]}")
+        fi
+    done < "$conf"
+
+    if [ ! -d $dest ]; then
+        mkdir $dest
+    fi
+
+    for i in "${binaries[@]}"; do
+        copy_sodeps $i
+        copy_file $i
+    done
+
+    for i in "${files[@]}"; do
+        copy_file $i
+    done
+
+    mkosi -f --extra-tree="/usr/lib/modules/$(uname -r):/usr/lib/modules/$(uname -r)" build
+
+    local kernel_version="$(uname -r)"
+    for kernel_image in /boot/vmlinu*; do
+        image_version=$(file -bL "$kernel_image" | grep -o 'version [^ ]*' | cut -d ' ' -f 2)
+        if [[ "$image_version" == "$kernel_version" ]]; then
+            ln -sf $kernel_image ./image.vmlinuz
+            return 0
+        fi
+    done
+
+    exit 1
+}
+
+start() {
+    if [[ -h ./image && -h ./image.vmlinuz ]]; then
+        systemd-run \
+        --user -d -u shelter.service -p StandardInput=null -G \
+        /usr/bin/qemu-system-x86_64 -accel kvm -m 1g -kernel ./image.vmlinuz -initrd ./image --device vhost-vsock-pci,guest-cid=21 --append "console=ttyS0" --nographic
+    fi
+}
+
+is-active() {
+    systemctl --user -q is-active shelter.service
+}
+
+status() {
+    if is-active; then
+        systemctl --user status shelter.service
+        return 0
+    fi
+    echo "Shelter isn't running"
+}
+
+stop() {
+    if is-active; then
+        echo "/usr/bin/poweroff" | socat - vsock-connect:21:4321
+    fi
+    
+    for ((i=20; i>0; i--))
+    do
+        is-active
+        if [ $? -ne 0 ]; then
+            echo "Shelter has been smoothly shut down"
+            return 0  
+        fi
+        sleep 1
+    done
+    systemctl --user stop shelter.service
+    echo "Shelter has been forcibly shut down"
+}
+
+exec() {
+    echo "$@" | socat - vsock-connect:21:4321
+}
+
+clean() {
+    mkosi clean
+    rm -r ./.cache
+}
+
+# Check if a subcommand or help option is provided
+if [ $# -lt 1 ]; then
+    show_help
+    exit 1
 fi
 
-for i in "${binaries[@]}"; do
-  copy_sodeps $i
-  copy_file $i
+# Check for --help or -h options
+for arg in "$@"; do
+    case $arg in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+    esac
 done
 
-for i in "${files[@]}"; do
-    copy_file $i
-done
+# Get subcommand
+subcommand=$1
+shift
+
+case $subcommand in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    build)
+        build
+        ;;
+    status)
+        status
+        ;;
+    exec)
+        exec "$@"
+        ;;
+    clean)
+        clean
+        ;;
+    help)
+        show_help
+        ;;
+    *)
+        echo "Unknown Subcommand: $subcommand"
+        exit 1
+        ;;
+esac
