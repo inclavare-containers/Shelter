@@ -94,6 +94,8 @@ build() {
     local binaries=()
     local files=()
 
+    echo "[-] Gather files to be copied to initrd"
+
     if [ ! -f $conf ]; then
         echo "Error: build.conf didn't exist"
         exit 0
@@ -133,22 +135,26 @@ build() {
         copy_file $i
     done
 
+    echo "[-] Build initrd image: ./image"
+
     mkosi -f --extra-tree="/usr/lib/modules/$(uname -r):/usr/lib/modules/$(uname -r)" build
 
+    echo "[-] Copy kernel: ./image.vmlinuz"
     local kernel_version="$(uname -r)"
     for kernel_image in /boot/vmlinu*; do
         image_version=$(file -bL "$kernel_image" | grep -o 'version [^ ]*' | cut -d ' ' -f 2)
         if [[ "$image_version" == "$kernel_version" ]]; then
-            ln -sf $kernel_image ./image.vmlinuz
+            cp $kernel_image ./image.vmlinuz
             return 0
         fi
     done
 
+    echo "Error: can't find the currently active kernel from /boot/"
     exit 1
 }
 
 start() {
-    if [[ -h ./image && -h ./image.vmlinuz ]]; then
+    if [[ -f ./image && -f ./image.vmlinuz ]]; then
         systemd-run \
         --user -d -u shelter.service -p StandardInput=null -G \
         /usr/bin/qemu-system-x86_64 -accel kvm -m 1g -kernel ./image.vmlinuz -initrd ./image --device vhost-vsock-pci,guest-cid=21 --append "console=ttyS0" --nographic
