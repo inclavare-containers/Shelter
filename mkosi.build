@@ -8,5 +8,3 @@ cp rcS $DESTDIR/etc/init.d/
 cp ./conf/acpid.conf $DESTDIR/etc/
 cp ./conf/power $DESTDIR/etc/acpi/
 cp ./conf/blacklist.conf $DESTDIR/etc/modprobe.d/
-
-rsync -c -l --info=skip2 -r --ignore-existing .cache/* $DESTDIR/

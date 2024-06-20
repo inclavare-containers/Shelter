@@ -1,3 +1,5 @@
+rsync -c -l --info=skip2 -r --ignore-existing .cache/* $BUILDROOT/
+
 ln -srf $BUILDROOT/usr/bin/busybox $BUILDROOT/init
 ln -srf $BUILDROOT/usr/bin/busybox $BUILDROOT/bin/sh
 
