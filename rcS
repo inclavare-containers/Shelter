@@ -7,7 +7,8 @@ mount -t sysfs sysfs /sys
 mkdir /dev/pts
 mount -t devpts devpts /dev/pts
 
-mdev -d
+echo /sbin/mdev > /proc/sys/kernel/hotplug 
+mdev -s
 
 /usr/bin/modprobe -a vhost_vsock vmw_vsock_virtio_transport
 
