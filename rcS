@@ -18,4 +18,4 @@ find /sys/ -name modalias -print0 | \
 
 acpid
 
-socat vsock-l:4321,reuseaddr,fork "exec:'xargs -0 sh -c',stderr" &
+socat vsock-listen:4321,reuseaddr,fork "exec:'xargs -0 sh -c',stderr" &
