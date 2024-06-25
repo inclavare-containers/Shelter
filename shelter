@@ -105,7 +105,8 @@ build() {
     local binaries=()
     local files=()
 
-    echo "[-] Gather files to be copied to initrd"
+    echo "[-] Gather files to be copied to initrd and copy into $dest"
+    rm -rf $dest
 
     if [ ! -f $conf ]; then
         echo "Error: build.conf didn't exist"
@@ -148,7 +149,10 @@ build() {
 
     echo "[-] Build initrd image: ./image"
 
-    mkosi -f --extra-tree="/usr/lib/modules/$(uname -r):/usr/lib/modules/$(uname -r)" build
+    if ! mkosi -f --extra-tree="/usr/lib/modules/$(uname -r):/usr/lib/modules/$(uname -r)" build ; then
+        echo "Error: failed to build initrd image with mkosi"
+        exit 1
+    fi
 
     echo "[-] Copy kernel: ./image.vmlinuz"
     local kernel_version="$(uname -r)"
@@ -169,6 +173,9 @@ start() {
         systemd-run \
         --user -d -u shelter.service -p StandardInput=null -G \
         /usr/bin/qemu-system-x86_64 -accel kvm -m 4g -kernel ./image.vmlinuz -initrd ./image --device vhost-vsock-pci,guest-cid=21 --append "console=ttyS0" --nographic
+    else
+        Echo "The files ./image or ./image.vmlinuz is missing. You may need to run 'shelter build' first."
+        exit 1
     fi
 }
 
@@ -185,11 +192,17 @@ status() {
 }
 
 stop() {
-    if is-active; then
-        echo "/usr/bin/poweroff" | socat - vsock-connect:21:4321
+    if ! is-active; then
+        exit 0;
     fi
+
+    echo "Send poweroff event to the guest vm"
+    echo "/usr/bin/poweroff" | socat - vsock-connect:21:4321
+
+    wait_seconds=20
+    echo "Now waiting ${wait_seconds} seconds for the guest vm to exit ..."
     
-    for ((i=20; i>0; i--))
+    for ((i=${wait_seconds}; i>0; i--))
     do
         is-active
         if [ $? -ne 0 ]; then
