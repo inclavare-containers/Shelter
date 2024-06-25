@@ -82,10 +82,21 @@ copy_sodeps() {
 
     # Parse ldd output and extract and copy dependency paths
     echo "$dependencies" | while read -r line; do
-        local lib_path
-        lib_path=$(echo "$line" | awk -F '=>' '{print $2}' | awk '{print $1}')
-        if [ -n "$lib_path" ] && [ -e "$lib_path" ]; then
-            copy_file "$lib_path"
+        # Check if the line not contains '=>'
+        if ! echo "$line" | grep -q '=>'; then
+            # Extract the path, ensuring it starts with /
+            local lib_path
+            lib_path=$(echo "$line" | awk '{print $1}' | grep '^/')
+            if [ -n "$lib_path" ]; then
+                copy_file "$lib_path"
+                continue
+            fi
+        else
+            local lib_path
+            lib_path=$(echo "$line" | awk -F '=>' '{print $2}' | awk '{print $1}')
+            if [ -n "$lib_path" ] && [ -e "$lib_path" ]; then
+                copy_file "$lib_path"
+            fi
         fi
     done
 }
