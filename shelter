@@ -157,7 +157,7 @@ start() {
     if [[ -f ./image && -f ./image.vmlinuz ]]; then
         systemd-run \
         --user -d -u shelter.service -p StandardInput=null -G \
-        /usr/bin/qemu-system-x86_64 -accel kvm -m 1g -kernel ./image.vmlinuz -initrd ./image --device vhost-vsock-pci,guest-cid=21 --append "console=ttyS0" --nographic
+        /usr/bin/qemu-system-x86_64 -accel kvm -m 4g -kernel ./image.vmlinuz -initrd ./image --device vhost-vsock-pci,guest-cid=21 --append "console=ttyS0" --nographic
     fi
 }
 
