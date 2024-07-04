@@ -186,6 +186,50 @@ is-active() {
     systemctl --user -q is-active shelter.service
 }
 
+
+run() {
+    start 1>&- 2>&-
+
+    debug "The guest vm is booting"
+
+    wait_seconds=20
+    debug "Now waiting ${wait_seconds} seconds for the guest vm to ready ..."
+
+    is_ready=0
+
+    for ((i=${wait_seconds}; i>0; i--))
+    do
+        if ! is-active; then
+            error "Failed to run shelter guest vm"
+            return 1
+        fi
+
+        if socat /dev/null vsock-connect:21:4321 1>&- 2>&-; then
+            # The vm is ready
+            is_ready=1
+            break
+        fi
+
+        sleep 1
+    done
+
+    if [[ ! $is_ready -eq 1 ]]; then
+        error "Failed to run shelter guest vm"
+        stop
+        return 1
+    fi
+
+    if [[ $1 == "--" ]]; then
+        shift
+    fi
+
+    debug "Run command in guest: '$@'"
+    exec $@
+
+    stop
+}
+
+
 status() {
     if is-active; then
         systemctl --user status shelter.service
@@ -219,6 +263,10 @@ stop() {
 }
 
 exec() {
+    if [[ $1 == "--" ]]; then
+        shift
+    fi
+
     echo "$@" | socat - vsock-connect:21:4321
 }
 
@@ -240,6 +288,9 @@ for arg in "$@"; do
             show_help
             exit 0
             ;;
+        --)
+            break
+            ;;
     esac
 done
 
@@ -259,6 +310,9 @@ case $subcommand in
         ;;
     status)
         status
+        ;;
+    run)
+        run "$@"
         ;;
     exec)
         exec "$@"

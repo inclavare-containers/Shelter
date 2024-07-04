@@ -81,3 +81,9 @@ shelter默认构建的initramfs的发行版版本与host一致，支持的发行
     ./shelter stop
     ~~~
 
+8. 或者，直接运行命令（相当于start、exec、stop的组合）
+
+    ~~~sh
+    ./shelter run cat /proc/cpuinfo
+    ~~~
+

@@ -19,4 +19,4 @@ find /sys/ -name modalias -print0 | \
 
 acpid
 
-socat vsock-listen:4321,reuseaddr,fork "exec:'xargs -0 sh -c',stderr" &
+socat vsock-listen:4321,reuseaddr,fork "exec:'xargs --no-run-if-empty -0 sh -c',stderr" &
