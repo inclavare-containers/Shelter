@@ -105,9 +105,30 @@ copy_sodeps() {
 }
 
 build() {
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -c | --config)
+                if [[ ! -z "$2" && "$2" != -* ]]; then
+                    conf="$2"
+                    shift
+                else
+                    error "Error: --config requires a value." >&2
+                    return 1
+                fi
+                ;;
+            *)
+                error "Unknown option $1"
+                return 1
+                ;;
+        esac
+        shift
+    done
+
     local binaries=()
     local files=()
 
+    info "Using $conf as config file"
     debug "Gather files to be copied to initrd and copy into $dest"
     rm -rf $dest
 
@@ -306,7 +327,7 @@ case $subcommand in
         stop
         ;;
     build)
-        build
+        build "$@"
         ;;
     status)
         status
