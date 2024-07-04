@@ -29,38 +29,62 @@ add_dir() {
     fi
 }
 
-# Function to copy file
-copy_file() {
-    local file_path=$(realpath -s $1)
+copy_file_and_dir_no_resolve_symlink() {
+    local src_path=$(realpath -s $1)
+    local dst_path=${2:-$src_path}
+
+    # Check if the path exists
+    if [ ! -e "$src_path" ]; then
+        error "Error: $src_path is not a valid file/dir path"
+        exit 1
+    fi
+
+    # Check if is a file and already copied
+    if ([ -e "${dest}${dst_path}" ] || [ -L "${dest}${dst_path}" ]) && ! diff -q "${src_path}" "${dest}${dst_path}" >/dev/null ; then
+        warn "Warn: target path $dst_path already existed in $dest but different, will be overwrited"
+    fi
+
+    if [[ -d "$src_path" ]]; then
+        src_path="$src_path"/
+        dst_path="$dst_path"/
+    fi
+
+    rsync -ap --links ${src_path} ${dest}${dst_path}
+}
+
+# Function to copy file (dir is not handled)
+copy_file_resolve_symlink() {
+    local src_path=$(realpath -s $1)
+    local dst_path=${2:-$src_path}
 
     # Check if the file exists
-    if [ ! -e "$file_path" ]; then
-        error "Error: $file_path is not a valid file path"
+    if [ ! -e "$src_path" ]; then
+        error "Error: $src_path is not a valid file path"
         exit 1
     fi
 
     # Check if the file already copied
-    if [ -e "${dest}${file_path}" ] && ! diff -q "${file_path}" "${dest}${file_path}" >/dev/null ; then
-        warn "Warn: target file $file_path file already copied into $dest but different, will be overwrited"
+    if [ -e "${dest}${dst_path}" ] && ! diff -q "${src_path}" "${dest}${dst_path}" >/dev/null ; then
+        warn "Warn: target path $dst_path already existed in $dest but different, will be overwrited"
     fi
 
     # Check if file is symbolic link
-    if [ -L "$file_path" ]; then
+    if [ -L "$src_path" ]; then
         local target_file_path=$(realpath $1)
-        copy_file $target_file_path
-        add_dir $(dirname $file_path)
-        rsync -a --links ${file_path} ${dest}${file_path}
+        copy_file_resolve_symlink $target_file_path
+        add_dir $(dirname $dst_path)
+        rsync -a --links ${src_path} ${dest}${dst_path}
         return
     fi
 
     # Check if file is regular
-    if [ -f "$file_path" ]; then
-        add_dir $(dirname $file_path)
-        cp -a ${file_path} ${dest}${file_path}
+    if [ -f "$src_path" ]; then
+        add_dir $(dirname $dst_path)
+        cp -a ${src_path} ${dest}${dst_path}
         return
     fi
 
-    warn "$file_path isn't sysmlink or regular file"
+    warn "$src_path isn't sysmlink or regular file"
     exit 1
 }
 
@@ -91,14 +115,14 @@ copy_sodeps() {
             local lib_path
             lib_path=$(echo "$line" | awk '{print $1}' | grep '^/')
             if [ -n "$lib_path" ]; then
-                copy_file "$lib_path"
+                copy_file_resolve_symlink "$lib_path"
                 continue
             fi
         else
             local lib_path
             lib_path=$(echo "$line" | awk -F '=>' '{print $2}' | awk '{print $1}')
             if [ -n "$lib_path" ] && [ -e "$lib_path" ]; then
-                copy_file "$lib_path"
+                copy_file_resolve_symlink "$lib_path"
             fi
         fi
     done
@@ -162,13 +186,36 @@ build() {
         mkdir $dest
     fi
 
+    conf_dir=`dirname $conf`
+
     for i in "${binaries[@]}"; do
-        copy_sodeps $i
-        copy_file $i
+        if [[ "$i" == *:* ]]; then
+            IFS=':' read -r src dst <<< "$i"
+        else
+            src="$i"
+            dst="$i"
+        fi
+
+        if [[ ! $src =~ ^/ ]]; then
+            src="$conf_dir/$src"
+        fi
+
+        copy_sodeps $src
+        copy_file_resolve_symlink "$src" "$dst"
     done
 
     for i in "${files[@]}"; do
-        copy_file $i
+        if [[ "$i" == *:* ]]; then
+            IFS=':' read -r src dst <<< "$i"
+        else
+            src="$i"
+            dst="$i"
+        fi
+
+        if [[ ! $src =~ ^/ ]]; then
+            src="$conf_dir/$src"
+        fi
+        copy_file_and_dir_no_resolve_symlink "$src" "$dst"
     done
 
     debug "Build initrd image: ./image"
