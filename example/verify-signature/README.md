@@ -32,3 +32,12 @@
     ./shelter run verifier.sh /keys/public_key.pem /payload/archive.tar.gz.sig /payload/archive.tar.gz
     ~~~
 
+    可以观测到解密成功
+
+5. 作为对比，我们可以在主机环境中直接运行该解密程序
+
+    ~~~sh
+    ./example/verify-signature/verifier.sh ./example/verify-signature/keys/public_key.pem ./example/verify-signature/payload/archive.tar.gz.sig ./example/verify-signature/payload/archive.tar.gz
+    ~~~
+
+    可以观测到一样的程序输出
