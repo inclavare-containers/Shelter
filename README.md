@@ -62,8 +62,8 @@ shelter默认构建的initramfs的发行版版本与host一致，支持的发行
 
 4. 构建shelter
     ~~~sh
-    ./shelter build
     cd shelter
+    ./shelter build
     ~~~
 
 5. 启动shelter
