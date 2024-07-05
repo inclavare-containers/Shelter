@@ -129,7 +129,6 @@ copy_sodeps() {
 }
 
 build() {
-
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -c | --config)
@@ -241,9 +240,12 @@ build() {
 
 start() {
     if [[ -f ./image && -f ./image.vmlinuz ]]; then
-        systemd-run \
-        --user -d -u shelter.service -p StandardInput=null -G \
-        /usr/bin/qemu-system-x86_64 -accel kvm -m 4g -kernel ./image.vmlinuz -initrd ./image --device vhost-vsock-pci,guest-cid=21 --append "console=ttyS0" --nographic
+        systemd-run --user -d -u shelter.service -p StandardInput=null -G \
+          /usr/bin/qemu-system-x86_64 \
+            -accel kvm -m 4g --nographic \
+            -kernel ./image.vmlinuz -initrd ./image \
+            --append "console=ttyS0" \
+            --device vhost-vsock-pci,guest-cid=21
     else
         error "The files ./image or ./image.vmlinuz is missing. You may need to run 'shelter build' first."
         exit 1
@@ -253,7 +255,6 @@ start() {
 is-active() {
     systemctl --user -q is-active shelter.service
 }
-
 
 run() {
     start 1>&- 2>&-
@@ -296,7 +297,6 @@ run() {
 
     stop
 }
-
 
 status() {
     if is-active; then
@@ -392,7 +392,7 @@ case $subcommand in
         show_help
         ;;
     *)
-        echo "Unknown Subcommand: $subcommand"
+        echo "Unrecongnized subcommand: $subcommand"
         exit 1
         ;;
 esac
