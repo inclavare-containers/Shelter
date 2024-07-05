@@ -21,3 +21,4 @@ binary
 *.pdf
 
 .cache
+.swp
