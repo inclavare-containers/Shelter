@@ -4,15 +4,15 @@ Shelter是一个用于CVM Launcher的工具。
 
 ## Dependencies
 
-~~~
+~~~sh
 mkosi rsync kmod socat busybox coreutils
 ~~~
 
 ## Usage
 
-**shelter不需要root权限,也不建议使用root权限运行shelter(防止损坏host)**
+**Shelter不需要root权限，也不建议使用root权限运行Shelter(防止损坏host)。**
 
-~~~
+~~~txt
 ./shelter
 ---
 Usage: shelter {subcommand}
@@ -28,11 +28,11 @@ Options:
     -h, --help  Show this help message and exit
 ~~~
 
-shelter默认构建的initramfs的发行版版本与host一致，支持的发行版有`debian`，`arch`，`opensuse`，`ubuntu`，`centos`，`rocky`，`alma`，`fedora`，`rhel-ubi`，`mageia`和`openmandriva`。
+Shelter默认构建的initramfs的发行版版本与host一致，支持的发行版有`debian`，`arch`，`opensuse`，`ubuntu`，`centos`，`rocky`，`alma`，`fedora`，`rhel-ubi`，`mageia`和`openmandriva`。
 
-通过配置[build.conf](./build.conf)文件，可以实现在执行shelter构建时，将指定的文件和二进制文件复制到initramfs中，并且可以自动复制其依赖的.so文件。
+通过配置[build.conf](./build.conf)文件，可以实现在执行Shelter构建时将指定的文件和二进制文件复制到initramfs中，并且可以自动复制其依赖的.so文件。
 
-## An example for running shelter on ubuntu 22.04 host
+## An example for running Shelter on ubuntu 22.04 host
 
 1. 安装依赖
     ~~~sh
@@ -53,11 +53,11 @@ shelter默认构建的initramfs的发行版版本与host一致，支持的发行
     具体的配置说明请查看[./build.conf](./build.conf)文件中的注释
 
     默认内容为：
-    ~~~
+    ~~~sh
     binary=(/usr/bin/socat /usr/bin/busybox /usr/bin/kmod)
     file=()
     ~~~
-    这些文件是目前版本的shelter运行所必需的。
+    这些文件是目前版本的Shelter运行所必需的。
     
     在当前的实现中，用户可以按照以上格式增加新路径以实现将程序/文件拷贝到initrd中。
 
@@ -90,7 +90,7 @@ shelter默认构建的initramfs的发行版版本与host一致，支持的发行
 
 ## 日志输出
 
-可通过`LOG_LEVEL`选项指定shelter的日志级别，例如`LOG_LEVEL=4`设置为DEBUG级别。默认日志级别为INFO。
+可通过`LOG_LEVEL`选项指定Shelter的日志级别，例如`LOG_LEVEL=4`设置为DEBUG级别。默认日志级别为INFO。
 
 支持的级别和对应数字如下：
 
