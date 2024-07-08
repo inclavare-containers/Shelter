@@ -203,6 +203,8 @@ build() {
             src="$conf_dir/$src"
         fi
 
+        src="$(realpath $src)"
+
         copy_sodeps $src
         copy_file_resolve_symlink "$src" "$dst"
     done
@@ -218,6 +220,8 @@ build() {
         if [[ ! $src =~ ^/ ]]; then
             src="$conf_dir/$src"
         fi
+
+        src="$(realpath $src)"
 
         copy_file_and_dir_no_resolve_symlink "$src" "$dst"
     done
