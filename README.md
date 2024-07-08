@@ -30,15 +30,15 @@ Shelter默认构建的initramfs的发行版版本与host一致，支持的发行
 
 ### 日志输出
 
-可通过`LOG_LEVEL`选项指定Shelter的日志级别，例如`LOG_LEVEL=4`设置为DEBUG级别。默认日志级别为INFO。
+可通过环境变量`LOG_LEVEL`设置Shelter的日志级别，例如`LOG_LEVEL=3`将日志级别设为DEBUG。默认的日志级别为INFO。
 
-支持的级别和对应数字如下：
+目前有效的日志级别和对应的数字如下：
 
 ```txt
-ERROR=1
-WARN=2
-INFO=3
-DEBUG=4
+ERROR=0
+WARN=1
+INFO=2
+DEBUG=3
 ```
 
 ## 开发者使用步骤

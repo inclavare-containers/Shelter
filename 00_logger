@@ -1,9 +1,9 @@
 #!/bin/bash
 
-ERROR=1
-WARN=2
-INFO=3
-DEBUG=4
+ERROR=0
+WARN=1
+INFO=2
+DEBUG=3
 
 LOG_LEVEL=${LOG_LEVEL:-$INFO}
 
@@ -14,22 +14,28 @@ log() {
         return
     fi
 
+    local log_level_str=""
+
     case $log_level_int in
         $ERROR)
             # Red
             color="31"
+            log_level_str="ERROR"
             ;;
         $WARN)
             # Yellow
             color="33"
+            log_level_str="WARN"
             ;;
         $DEBUG)
             # Cyan
             color="36"
+            log_level_str="DEBUG"
             ;;
         $INFO)
             # Green
             color="32"
+            log_level_str="INFO"
             ;;
         *)
             # Use default color for unrecognized log level
@@ -37,7 +43,6 @@ log() {
             ;;
     esac
 
-    local log_level_str=$2
     local message=${@:3}
     local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
     local log_message="[$timestamp][$log_level_str] $message"
@@ -45,21 +50,17 @@ log() {
 }
 
 error() {
-    log $ERROR "ERROR" $@
+    log $ERROR $@
 }
 
 warn() {
-    log $WARN "WARN" $@
+    log $WARN $@
 }
 
 info() {
-    log $INFO "INFO" $@
+    log $INFO $@
 }
 
 debug() {
-    log $DEBUG "DEBUG" $@
+    log $DEBUG $@
 }
-
-if [[ $LOG_LEVEL -lt $ERROR ]]; then
-    LOG_LEVEL=$INFO
-fi
