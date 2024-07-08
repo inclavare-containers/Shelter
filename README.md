@@ -1,6 +1,6 @@
-# shelter
+# Shelter
 
-Shelter是一个用于CVM Launcher的工具。
+Shelter是一个轻松方便在VM中运行应用的启动器。
 
 ## Usage
 
