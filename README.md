@@ -51,13 +51,6 @@ Shelter默认构建的initramfs的发行版版本与host一致，支持的发行
     - `binary=()`：指定要拷贝的可执行文件列表，程序依赖的动态库也会自动被拷贝到initrd中
     - `file=()`：指定要拷贝的普通文件列表
     具体的配置说明请查看[./build.conf](./build.conf)文件中的注释
-
-    默认内容为：
-    ~~~sh
-    binary=(/usr/bin/socat /usr/bin/busybox /usr/bin/kmod)
-    file=()
-    ~~~
-    这些文件是目前版本的Shelter运行所必需的。
     
     在当前的实现中，用户可以按照以上格式增加新路径以实现将程序/文件拷贝到initrd中。
 

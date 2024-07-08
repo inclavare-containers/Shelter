@@ -4,6 +4,8 @@
 
 conf="build.conf"
 dest=".cache"
+ESSENTIAL_BINARIES=("/usr/bin/socat" "/usr/bin/busybox" "/usr/bin/kmod")
+ESSENTIAL_FILES=()
 
 # Function: Display help information
 show_help() {
@@ -185,6 +187,12 @@ build() {
         mkdir $dest
     fi
 
+    # Add the essential binaries
+    for i in "${ESSENTIAL_BINARIES[@]}"; do
+        copy_sodeps "$i"
+        copy_file_resolve_symlink "$i" "$i"
+    done
+
     # Assume any relative path in the source is always based on the directory
     # where the config file resides.
     local conf_dir=`dirname $conf`
@@ -207,6 +215,11 @@ build() {
 
         copy_sodeps $src
         copy_file_resolve_symlink "$src" "$dst"
+    done
+
+    # Add the essential files
+    for i in "${ESSENTIAL_FILES[@]}"; do
+        copy_file_and_dir_no_resolve_symlink "$i"
     done
 
     for i in "${files[@]}"; do
