@@ -9,14 +9,14 @@
 1. 生成用于签名的RSA公私钥对
 
     ~~~sh
-    ./example/verify-signature/gen-keypair.sh
+    ./demos/verify-signature/gen-keypair.sh
     ~~~
     密钥将产生在该示例的keys目录下
 
 2. 准备制品并用私钥进行签名
 
     ~~~sh
-    ./example/verify-signature/prepare-payload.sh
+    ./demos/verify-signature/prepare-payload.sh
     ~~~
     制品和制品签名文件将产生在该示例的payload目录下
 
@@ -24,7 +24,7 @@
 3. 为了和之后在shelter中运行作对比，我们可以先在主机环境中直接运行该验证程序
 
     ~~~sh
-    ./example/verify-signature/verifier.sh ./example/verify-signature/keys/public_key.pem ./example/verify-signature/payload/archive.tar.gz.sig ./example/verify-signature/payload/archive.tar.gz
+    ./demos/verify-signature/verifier.sh ./demos/verify-signature/keys/public_key.pem ./demos/verify-signature/payload/archive.tar.gz.sig ./demos/verify-signature/payload/archive.tar.gz
     ~~~
 
     可以观测到验证成功
@@ -34,7 +34,7 @@
 4. 使用准备好的配置文件，构建shelter镜像
 
     ~~~sh
-    ./shelter build -c ./example/verify-signature/build.conf
+    ./shelter build -c ./demos/verify-signature/build.conf
     ~~~
 
     将在项目根目录下产生内核`image.vmlinuz`、initrd镜像`image`
