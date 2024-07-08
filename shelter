@@ -8,7 +8,7 @@ dest=".cache"
 # Function: Display help information
 show_help() {
     cat <<EOF
-Usage: shelter {subcommand}
+Usage: shelter [Options] SubCommand
 Available SubCommands:
     build   Build the shelter
     start   Start the shelter
@@ -24,6 +24,7 @@ EOF
 
 add_dir() {
     local dir_path=$1
+
     if [ ! -d ${dest}$dir_path ]; then
         mkdir -p ${dest}${dir_path}
     fi
@@ -99,8 +100,7 @@ copy_sodeps() {
     fi
 
     # Use ldd to get dependencies
-    local dependencies
-    dependencies=$(ldd "$binary_path" 2>/dev/null)
+    local dependencies=$(ldd "$binary_path" 2>/dev/null)
 
     if [ $? -ne 0 ]; then
         warn "Warn: $binary_path is not a dynamic binary"
@@ -131,7 +131,7 @@ copy_sodeps() {
 build() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            -c | --config)
+            -c|--config)
                 if [[ ! -z "$2" && "$2" != -* ]]; then
                     conf="$2"
                     shift
@@ -141,12 +141,17 @@ build() {
                 fi
                 ;;
             *)
-                error "Unknown option $1"
+                error "Unrecognized option $1"
                 return 1
                 ;;
         esac
         shift
     done
+
+    if [ ! -f $conf ]; then
+        error "Error: build.conf didn't exist"
+        exit 0
+    fi
 
     local binaries=()
     local files=()
@@ -155,14 +160,9 @@ build() {
     debug "Gather files to be copied to initrd and copy into $dest"
     rm -rf $dest
 
-    if [ ! -f $conf ]; then
-        error "Error: build.conf didn't exist"
-        exit 0
-    fi
-
     # Read options from the configuration file
     while IFS= read -r line || [ -n "$line" ]; do
-        # Trim leading and trailing whitespace
+        # Trim leading and trailing whitespaces
         line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
         # Check line content and extract values
@@ -185,8 +185,11 @@ build() {
         mkdir $dest
     fi
 
-    conf_dir=`dirname $conf`
+    # Assume any relative path in the source is always based on the directory
+    # where the config file resides.
+    local conf_dir=`dirname $conf`
 
+    # Parse the mapping between the source and destinaion
     for i in "${binaries[@]}"; do
         if [[ "$i" == *:* ]]; then
             IFS=':' read -r src dst <<< "$i"
@@ -195,6 +198,7 @@ build() {
             dst="$i"
         fi
 
+        # Prepend the prefix
         if [[ ! $src =~ ^/ ]]; then
             src="$conf_dir/$src"
         fi
@@ -214,18 +218,23 @@ build() {
         if [[ ! $src =~ ^/ ]]; then
             src="$conf_dir/$src"
         fi
+
         copy_file_and_dir_no_resolve_symlink "$src" "$dst"
     done
 
-    debug "Build initrd image: ./image"
+    debug "Building initrd image: ./image"
 
-    if ! mkosi -f --extra-tree="/usr/lib/modules/$(uname -r):/usr/lib/modules/$(uname -r)" build ; then
+    local kernel_version="$(uname -r)"
+    mkosi -f \
+      --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
+      build
+    if [ $? -ne 0 ]; then
         error "Error: failed to build initrd image with mkosi"
         exit 1
     fi
 
-    debug "Copy kernel: ./image.vmlinuz"
-    local kernel_version="$(uname -r)"
+    debug "Copying kernel: ./image.vmlinuz"
+
     for kernel_image in /boot/vmlinu*; do
         image_version=$(file -bL "$kernel_image" | grep -o 'version [^ ]*' | cut -d ' ' -f 2)
         if [[ "$image_version" == "$kernel_version" ]]; then
@@ -244,8 +253,8 @@ start() {
           /usr/bin/qemu-system-x86_64 \
             -accel kvm -m 4g --nographic \
             -kernel ./image.vmlinuz -initrd ./image \
-            --append "console=ttyS0" \
-            --device vhost-vsock-pci,guest-cid=21
+            -append "console=ttyS0" \
+            -device vhost-vsock-pci,guest-cid=21
     else
         error "The files ./image or ./image.vmlinuz is missing. You may need to run 'shelter build' first."
         exit 1
@@ -261,20 +270,20 @@ run() {
 
     debug "The guest vm is booting"
 
-    wait_seconds=20
-    debug "Now waiting ${wait_seconds} seconds for the guest vm to ready ..."
+    local wait_seconds=20
+    debug "Now waiting ${wait_seconds} seconds for the guest to launch ..."
 
-    is_ready=0
+    local is_ready=0
 
     for ((i=${wait_seconds}; i>0; i--))
     do
         if ! is-active; then
-            error "Failed to run shelter guest vm"
+            error "Failed to run shelter guest"
             return 1
         fi
 
         if socat /dev/null vsock-connect:21:4321 1>&- 2>&-; then
-            # The vm is ready
+            # The guest is ready
             is_ready=1
             break
         fi
@@ -282,8 +291,8 @@ run() {
         sleep 1
     done
 
-    if [[ ! $is_ready -eq 1 ]]; then
-        error "Failed to run shelter guest vm"
+    if [[ $is_ready -ne 1 ]]; then
+        error "Failed to run shelter guest"
         stop
         return 1
     fi
@@ -303,6 +312,7 @@ status() {
         systemctl --user status shelter.service
         return 0
     fi
+
     echo "Shelter isn't running"
 }
 
@@ -314,18 +324,18 @@ stop() {
     debug "Send poweroff event to the guest vm"
     echo "/usr/bin/poweroff" | socat - vsock-connect:21:4321
 
-    wait_seconds=20
+    local wait_seconds=20
     debug "Now waiting ${wait_seconds} seconds for the guest vm to exit ..."
 
     for ((i=${wait_seconds}; i>0; i--))
     do
-        is-active
-        if [ $? -ne 0 ]; then
-            debug "Shelter has been smoothly shut down"
+        if ! is-active; then
+            debug "Shelter has been smoothly stopped"
             return 0
         fi
         sleep 1
     done
+
     systemctl --user stop shelter.service
     error "Shelter has been forcibly shut down"
 }
@@ -340,7 +350,7 @@ exec() {
 
 clean() {
     mkosi clean
-    rm -r ./.cache
+    rm -rf ./.cache
 }
 
 # Check if a subcommand or help option is provided
@@ -392,7 +402,7 @@ case $subcommand in
         show_help
         ;;
     *)
-        echo "Unrecongnized subcommand: $subcommand"
+        echo "Unrecognized subcommand: $subcommand"
         exit 1
         ;;
 esac

@@ -7,15 +7,11 @@ DEBUG=4
 
 LOG_LEVEL=${LOG_LEVEL:-$INFO}
 
-
-function log() {
+log() {
     local log_level_int=$1
     local log_level_str=$2
     local message=${@:3}
-
     local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-
-
     local log_message="[$timestamp] [$log_level_str] - $message"
 
     if [[ $log_level_int -le $LOG_LEVEL ]]; then
@@ -23,23 +19,22 @@ function log() {
     fi
 }
 
-function error() {
+error() {
     log $ERROR "ERROR" $@
 }
 
-function warn() {
+warn() {
     log $WARN "WARN" $@
 }
 
-function info() {
+info() {
     log $INFO "INFO" $@
 }
 
-function debug() {
+debug() {
     log $DEBUG "DEBUG" $@
 }
 
 if [[ $LOG_LEVEL -lt $ERROR ]]; then
     LOG_LEVEL=$INFO
 fi
-
