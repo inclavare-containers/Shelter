@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-. `dirname $0`/logger.sh
+. /etc/shelter.d/00_logger
 
 conf="build.conf"
 dest=".cache"

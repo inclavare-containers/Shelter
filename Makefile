@@ -1,4 +1,5 @@
 PREFIX ?= /usr/local
+CONFIG_DIR ?= /etc/shelter.d
 
 .PHONE: help _depend prepare build clean install uninstall test all sync
 
@@ -20,7 +21,7 @@ _depend: # Install the build and runtime dependencies
 	}; \
 	apt update && \
 	  install_pkg "socat" "kmod" "git" "sudo" "rsync" "busybox-static" \
-	    "bubblewrap" "qemu-system-x86" "openssl" "tar"
+	    "bubblewrap" "qemu-system-x86"
 
 prepare: _depend # Download and configure the necessary components (network access required)
 	@[ ! -d "mkosi" ] && { \
@@ -36,7 +37,12 @@ install: # Install the build artifacts
 	    sudo cp -f mkosi/bin/mkosi "$(PREFIX)/bin"; \
 	} || true
 
-	@sudo cp -f shelter logger.sh "$(PREFIX)/bin"
+	@[ ! -d "$(CONFIG_DIR)" ] && { \
+	    mkdir -p "$(CONFIG_DIR)"; \
+	} || true; \
+	cp -f 00_logger "$(CONFIG_DIR)"
+
+	@sudo cp -f shelter "$(PREFIX)/bin"
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
