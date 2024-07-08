@@ -136,6 +136,10 @@ build() {
             -c|--config)
                 if [[ ! -z "$2" && "$2" != -* ]]; then
                     conf="$2"
+                    if [ ! -s "$conf" ]; then
+                        error "Error: build config file \"$conf\" doesn't exist"
+                        exit 1
+                    fi
                     shift
                 else
                     error "Error: --config requires a value." >&2
@@ -149,11 +153,6 @@ build() {
         esac
         shift
     done
-
-    if [ ! -f $conf ]; then
-        error "Error: build.conf didn't exist"
-        exit 0
-    fi
 
     local binaries=()
     local files=()
