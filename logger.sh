@@ -40,7 +40,7 @@ log() {
     local log_level_str=$2
     local message=${@:3}
     local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
-    local log_message="[$timestamp] [$log_level_str] - $message"
+    local log_message="[$timestamp][$log_level_str] $message"
     echo -e "\033[1;${color}m${log_message}\033[0m"
 }
 
