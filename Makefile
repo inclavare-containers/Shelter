@@ -20,7 +20,7 @@ _depend: # Install the build and runtime dependencies
 	}; \
 	apt update && \
 	  install_pkg "socat" "kmod" "git" "sudo" "rsync" "busybox-static" \
-	    "bubblewrap" "qemu-system-x86"
+	    "bubblewrap" "qemu-system-x86" "openssl" "tar"
 
 prepare: _depend # Download and configure the necessary components (network access required)
 	@[ ! -d "mkosi" ] && { \
