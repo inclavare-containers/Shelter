@@ -2,7 +2,7 @@
 
 该示例程序旨在演示使用shelter运行一个制品签名验证程序的场景。
 
-假设已经安装好shelter及其依赖库、mkosi。在项目根目录下运行以下命令
+假设已经安装好shelter、依赖库以及mkosi。在项目根目录下运行以下命令：
 
 ## 准备制品和制品签名
 
@@ -20,14 +20,16 @@
     ~~~
     制品和制品签名文件将产生在该示例的payload目录下
 
-
 3. 为了和之后在shelter中运行作对比，我们可以先在主机环境中直接运行该验证程序
 
     ~~~sh
-    ./demos/verify-signature/verifier.sh ./demos/verify-signature/keys/public_key.pem ./demos/verify-signature/payload/archive.tar.gz.sig ./demos/verify-signature/payload/archive.tar.gz
+    ./demos/verify-signature/verifier.sh \
+      ./demos/verify-signature/keys/public_key.pem \
+      ./demos/verify-signature/payload/archive.tar.gz.sig \
+      ./demos/verify-signature/payload/archive.tar.gz
     ~~~
 
-    可以观测到验证成功
+    可以观测到验证成功。
 
 ## 在shelter运行验证程序
 
@@ -37,12 +39,14 @@
     ./shelter build -c ./demos/verify-signature/build.conf
     ~~~
 
-    将在项目根目录下产生内核`image.vmlinuz`、initrd镜像`image`
+    将在项目根目录下产生内核`image.vmlinuz`和initrd镜像`image`。
 
 5. 在shelter中运行验证程序
 
     ~~~sh
-    ./shelter run verifier.sh /keys/public_key.pem /payload/archive.tar.gz.sig /payload/archive.tar.gz
+    ./shelter run \
+      verifier.sh /keys/public_key.pem /payload/archive.tar.gz.sig \
+        /payload/archive.tar.gz
     ~~~
 
-    可以观测到和在主机环境中运行（步骤3里）一样的程序输出
+    可以观测到和在主机环境中运行（步骤3里）一样的程序输出。
