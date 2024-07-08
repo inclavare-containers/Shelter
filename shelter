@@ -353,56 +353,60 @@ clean() {
     rm -rf ./.cache
 }
 
-# Check if a subcommand or help option is provided
-if [ $# -lt 1 ]; then
-    show_help
-    exit 1
-fi
+main() {
+    # Check if a subcommand or help option is provided
+    if [ $# -lt 1 ]; then
+        show_help
+        exit 1
+    fi
 
-# Check for --help or -h options
-for arg in "$@"; do
-    case $arg in
-        -h|--help)
-            show_help
-            exit 0
+    # Check for --help or -h options
+    for arg in "$@"; do
+        case $arg in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            --)
+                break
+                ;;
+        esac
+    done
+
+    # Get subcommand
+    subcommand=$1
+    shift
+
+    case $subcommand in
+        start)
+            start
             ;;
-        --)
-            break
+        stop)
+            stop
+            ;;
+        build)
+            build "$@"
+            ;;
+        status)
+            status
+            ;;
+        run)
+            run "$@"
+            ;;
+        exec)
+            exec "$@"
+            ;;
+        clean)
+            clean
+            ;;
+        help)
+            show_help
+            ;;
+        *)
+            echo "Unrecognized subcommand: $subcommand"
+            exit 1
             ;;
     esac
-done
+}
 
-# Get subcommand
-subcommand=$1
-shift
-
-case $subcommand in
-    start)
-        start
-        ;;
-    stop)
-        stop
-        ;;
-    build)
-        build "$@"
-        ;;
-    status)
-        status
-        ;;
-    run)
-        run "$@"
-        ;;
-    exec)
-        exec "$@"
-        ;;
-    clean)
-        clean
-        ;;
-    help)
-        show_help
-        ;;
-    *)
-        echo "Unrecognized subcommand: $subcommand"
-        exit 1
-        ;;
-esac
+main "$@"
