@@ -409,4 +409,23 @@ main() {
     esac
 }
 
+trap_handler() {
+    trap - SIGINT EXIT ERR
+
+    local line_no="$1"
+    local err=$2
+
+    debug "Cleaning up ..."
+
+    if [ $err -ne 0 ] && [ "$line_no" != "1" ]; then
+        error "Error occurred on line $line_no, exit code: $err"
+    fi
+
+    debug "Exiting"
+
+    exit $err
+}
+
+trap 'trap_handler $LINENO $?' SIGINT EXIT ERR
+
 main "$@"
