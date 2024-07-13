@@ -1,4 +1,26 @@
 #!/usr/bin/env bash
+
+echo "SRCDIR: $SRCDIR"
+[ -n "$SRCDIR" ] && ls $SRCDIR
+
+echo "BUILDDIR: $BUILDDIR"
+[ -n "$BUILDDIR" ] && ls $BUILDDIR
+
+echo "DESTDIR: $DESTDIR"
+[ -n "$DESTDIR" ] && ls $DESTDIR
+
+echo "OUTPUTDIR: $OUTPUTDIR"
+[ -n "$OUTPUTDIR" ] && ls $OUTPUTDIR
+
+echo "BUILDROOT: $BUILDROOT"
+[ -n "$BUILDROOT" ] && ls $BUILDROOT
+
+echo "PACKAGEDIR: $PACKAGEDIR"
+[ -n "$PACKAGEDIR" ] && ls $PACKAGEDIR
+
+echo "ARTIFACTDIR: $ARTIFACTDIR"
+[ -n "$ARTIFACTDIR" ] && ls $ARTIFACTDIR
+
 mkdir -p $DESTDIR/etc/init.d
 mkdir -p $DESTDIR/etc/acpi
 mkdir -p $DESTDIR/etc/modprobe.d

@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
 
+echo "SRCDIR: $SRCDIR"
+[ -n "$SRCDIR" ] && ls $SRCDIR
+
+echo "OUTPUTDIR: $OUTPUTDIR"
+[ -n "$OUTPUTDIR" ] && ls $OUTPUTDIR
+
+echo "BUILDROOT: $BUILDROOT"
+[ -n "$BUILDROOT" ] && ls $BUILDROOT
+
+echo "PACKAGEDIR: $PACKAGEDIR"
+[ -n "$PACKAGEDIR" ] && ls $PACKAGEDIR
+
+echo "ARTIFACTDIR: $ARTIFACTDIR"
+[ -n "$ARTIFACTDIR" ] && ls $ARTIFACTDIR
+
 rsync -v --checksum --links --info=skip2 --recursive \
   --keep-dirlinks $BUILDROOT/extra/* $BUILDROOT/
 
