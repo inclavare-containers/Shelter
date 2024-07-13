@@ -4,7 +4,7 @@
 
 conf="build.conf"
 dest=".cache"
-ESSENTIAL_BINARIES=("/usr/bin/socat" "/usr/bin/busybox" "/usr/bin/kmod")
+ESSENTIAL_BINARIES=("socat" "busybox" "kmod")
 ESSENTIAL_FILES=()
 
 # Function: Display help information
@@ -188,6 +188,7 @@ build() {
 
     # Add the essential binaries
     for i in "${ESSENTIAL_BINARIES[@]}"; do
+        i="$(which $i)"
         copy_sodeps "$i"
         copy_file_resolve_symlink "$i" "$i"
     done
