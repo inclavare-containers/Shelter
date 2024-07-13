@@ -2,8 +2,14 @@
 
 . /etc/shelter.d/00_logger
 
-conf="build.conf"
-dest=".cache"
+SHELTER_CONF="/etc/shelter.d"
+
+DEFAULT_DIR="/var/run/shelter/default"
+DEFAULT_IMAGE="${DEFAULT_DIR}/image"
+DEFAULT_KERNEL="${DEFAULT_DIR}/kernel"
+EXTRA_DIR="${DEFAULT_DIR}/extra"
+CONF="${DEFAULT_DIR}/build.conf"
+
 ESSENTIAL_BINARIES=("socat" "busybox" "kmod")
 ESSENTIAL_FILES=()
 
@@ -27,8 +33,8 @@ EOF
 add_dir() {
     local dir_path=$1
 
-    if [ ! -d ${dest}$dir_path ]; then
-        mkdir -p ${dest}${dir_path}
+    if [ ! -d "${EXTRA_DIR}$dir_path" ]; then
+        mkdir -p "${EXTRA_DIR}${dir_path}"
     fi
 }
 
@@ -43,8 +49,8 @@ copy_file_and_dir_no_resolve_symlink() {
     fi
 
     # Check if is a file and already copied
-    if ([ -e "${dest}${dst_path}" ] || [ -L "${dest}${dst_path}" ]) && ! diff -q "${src_path}" "${dest}${dst_path}" >/dev/null ; then
-        warn "Warn: target path $dst_path already existed in $dest but different, will be overwrited"
+    if ([ -e "${EXTRA_DIR}${dst_path}" ] || [ -L "${EXTRA_DIR}${dst_path}" ]) && ! diff -q "${src_path}" "${EXTRA_DIR}${dst_path}" >/dev/null ; then
+        warn "Warn: target path $dst_path already existed in $EXTRA_DIR but different, will be overwrited"
     fi
 
     if [[ -d "$src_path" ]]; then
@@ -52,7 +58,7 @@ copy_file_and_dir_no_resolve_symlink() {
         dst_path="$dst_path"/
     fi
 
-    rsync -ap --links ${src_path} ${dest}${dst_path}
+    rsync -ap --links "${src_path}" "${EXTRA_DIR}${dst_path}"
 }
 
 # Function to copy file (dir is not handled)
@@ -67,8 +73,8 @@ copy_file_resolve_symlink() {
     fi
 
     # Check if the file already copied
-    if [ -e "${dest}${dst_path}" ] && ! diff -q "${src_path}" "${dest}${dst_path}" >/dev/null ; then
-        warn "Warn: target path $dst_path already existed in $dest but different, will be overwrited"
+    if [ -e "${EXTRA_DIR}${dst_path}" ] && ! diff -q "${src_path}" "${EXTRA_DIR}${dst_path}" >/dev/null ; then
+        warn "Warn: target path $dst_path already existed in $EXTRA_DIR but different, will be overwrited"
     fi
 
     # Check if file is symbolic link
@@ -76,14 +82,14 @@ copy_file_resolve_symlink() {
         local target_file_path=$(realpath $1)
         copy_file_resolve_symlink $target_file_path
         add_dir $(dirname $dst_path)
-        rsync -a --links ${src_path} ${dest}${dst_path}
+        rsync -a --links "${src_path}" "${EXTRA_DIR}${dst_path}"
         return
     fi
 
     # Check if file is regular
     if [ -f "$src_path" ]; then
         add_dir $(dirname $dst_path)
-        cp -a ${src_path} ${dest}${dst_path}
+        cp -a "${src_path}" "${EXTRA_DIR}${dst_path}"
         return
     fi
 
@@ -135,9 +141,9 @@ build() {
         case "$1" in
             -c|--config)
                 if [[ ! -z "$2" && "$2" != -* ]]; then
-                    conf="$2"
-                    if [ ! -s "$conf" ]; then
-                        error "Error: build config file \"$conf\" doesn't exist"
+                    CONF="$2"
+                    if [ ! -s "$CONF" ]; then
+                        error "Error: build config file \"$CONF\" doesn't exist"
                         exit 1
                     fi
                     shift
@@ -154,48 +160,48 @@ build() {
         shift
     done
 
-    local binaries=()
-    local files=()
+    debug "Gather files to be copied to initrd and copy into $EXTRA_DIR"
+    rm -rf "$EXTRA_DIR"
 
-    info "Using $conf as config file"
-    debug "Gather files to be copied to initrd and copy into $dest"
-    rm -rf $dest
-
-    # Read options from the configuration file
-    while IFS= read -r line || [ -n "$line" ]; do
-        # Trim leading and trailing whitespaces
-        line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-
-        # Check line content and extract values
-        if [[ $line == binary=* ]]; then
-            # Remove binary= and parentheses
-            line=$(echo "$line" | sed 's/^binary=//;s/[()]//g')
-            # Split into an array and add to binaries array
-            IFS=' ' read -r -a binary_array <<< "$line"
-            binaries+=("${binary_array[@]}")
-        elif [[ $line == file=* ]]; then
-            # Remove file= and parentheses
-            line=$(echo "$line" | sed 's/^file=//;s/[()]//g')
-            # Split into an array and add to files array
-            IFS=' ' read -r -a file_array <<< "$line"
-            files+=("${file_array[@]}")
-        fi
-    done < "$conf"
-
-    if [ ! -d $dest ]; then
-        mkdir $dest
+    if [ ! -d "$EXTRA_DIR" ]; then
+        mkdir "$EXTRA_DIR"
     fi
 
-    # Add the essential binaries
-    for i in "${ESSENTIAL_BINARIES[@]}"; do
-        i="$(which $i)"
-        copy_sodeps "$i"
-        copy_file_resolve_symlink "$i" "$i"
-    done
+    local binaries=()
+    local files=()
+    local src_dir="$(pwd)"
 
-    # Assume any relative path in the source is always based on the directory
-    # where the config file resides.
-    local conf_dir=`dirname $conf`
+    if [ -s "$CONF" ]; then
+        info "Using $CONF as config file"
+
+        # Read options from the configuration file
+        while IFS= read -r line || [ -n "$line" ]; do
+            # Trim leading and trailing whitespaces
+            line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+            # Check line content and extract values
+            if [[ $line == binary=* ]]; then
+                # Remove binary= and parentheses
+                line=$(echo "$line" | sed 's/^binary=//;s/[()]//g')
+                # Split into an array and add to binaries array
+                IFS=' ' read -r -a binary_array <<< "$line"
+                binaries+=("${binary_array[@]}")
+            elif [[ $line == file=* ]]; then
+                # Remove file= and parentheses
+                line=$(echo "$line" | sed 's/^file=//;s/[()]//g')
+                # Split into an array and add to files array
+                IFS=' ' read -r -a file_array <<< "$line"
+                files+=("${file_array[@]}")
+            fi
+        done < "$CONF"
+
+        # Assume any relative path in the source is always based on the
+        # directory where the config file resides.
+        src_dir="$(dirname $CONF)"
+    fi
+
+    local src=""
+    local dst=""
 
     # Parse the mapping between the source and destinaion
     for i in "${binaries[@]}"; do
@@ -208,18 +214,13 @@ build() {
 
         # Prepend the prefix
         if [[ ! $src =~ ^/ ]]; then
-            src="$conf_dir/$src"
+            src="$src_dir/$src"
         fi
 
         src="$(realpath $src)"
 
         copy_sodeps $src
         copy_file_resolve_symlink "$src" "$dst"
-    done
-
-    # Add the essential files
-    for i in "${ESSENTIAL_FILES[@]}"; do
-        copy_file_and_dir_no_resolve_symlink "$i"
     done
 
     for i in "${files[@]}"; do
@@ -239,10 +240,29 @@ build() {
         copy_file_and_dir_no_resolve_symlink "$src" "$dst"
     done
 
-    debug "Building initrd image: ./image"
+    # Add the essential binaries
+    for i in "${ESSENTIAL_BINARIES[@]}"; do
+        i="$(which $i)"
+        debug "Copying essential binary $i ..."
+
+        copy_sodeps "$i"
+        copy_file_resolve_symlink "$i" "$i"
+    done
+
+    # Add the essential files
+    for i in "${ESSENTIAL_FILES[@]}"; do
+        copy_file_and_dir_no_resolve_symlink "$i"
+    done
+
+    debug "Building initrd image: ${DEFAULT_IMAGE}"
 
     local kernel_version="$(uname -r)"
-    mkosi -f \
+    mkosi -f --debug -C "${SHELTER_CONF}" \
+      --build-script="${SHELTER_CONF}/mkosi.build" \
+      --finalize-script="${SHELTER_CONF}/mkosi.finalize" \
+      --postinst-script="${SHELTER_CONF}/mkosi.postinst" \
+      --output-dir="${DEFAULT_DIR}" --output="$(basename ${DEFAULT_IMAGE})" \
+      --extra-tree="${EXTRA_DIR}:/extra" \
       --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
       build
     if [ $? -ne 0 ]; then
@@ -250,10 +270,10 @@ build() {
         exit 1
     fi
 
-    debug "Copying kernel: ./image.vmlinuz"
+    debug "Copying kernel: ${DEFAULT_KERNEL}"
 
     if [ -s "/boot/vmlinuz-${kernel_version}" ]; then
-        cp -f "/boot/vmlinuz-${kernel_version}" ./image.vmlinuz
+        cp -f "/boot/vmlinuz-${kernel_version}" "${DEFAULT_KERNEL}"
         return 0
     fi
 
@@ -262,15 +282,15 @@ build() {
 }
 
 start() {
-    if [[ -f ./image && -f ./image.vmlinuz ]]; then
+    if [[ -s "${DEFAULT_IMAGE}" && -s "${DEFAULT_KERNEL}" ]]; then
         systemd-run --user -d -u shelter.service -p StandardInput=null -G \
           /usr/bin/qemu-system-x86_64 \
             -accel kvm -m 4g --nographic \
-            -kernel ./image.vmlinuz -initrd ./image \
+            -kernel "${DEFAULT_KERNEL}" -initrd "${DEFAULT_IMAGE}" \
             -append "console=ttyS0" \
             -device vhost-vsock-pci,guest-cid=21
     else
-        error "The files ./image or ./image.vmlinuz is missing. You may need to run 'shelter build' first."
+        error "The files ${DEFAULT_IMAGE} or ${DEFAULT_KERNEL} is missing. You may need to run 'shelter build' first."
         exit 1
     fi
 }
@@ -364,7 +384,7 @@ exec() {
 
 clean() {
     mkosi clean
-    rm -rf ./.cache
+    rm -rf "${EXTRA_DIR}"
 }
 
 main() {

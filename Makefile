@@ -41,6 +41,8 @@ install: # Install the build artifacts
 	    mkdir -p "$(CONFIG_DIR)"; \
 	} || true; \
 	cp -f 00_logger "$(CONFIG_DIR)"
+	cp -f mkosi.conf mkosi.build mkosi.finalize mkosi.postinst rcS "$(CONFIG_DIR)"
+	cp -a conf "$(CONFIG_DIR)"
 
 	@sudo cp -f shelter "$(PREFIX)/bin"
 

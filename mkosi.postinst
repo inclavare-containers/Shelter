@@ -1,4 +1,7 @@
-rsync -v --checksum --links --info=skip2 --recursive --keep-dirlinks .cache/* $BUILDROOT/
+#!/usr/bin/env bash
+
+rsync -v --checksum --links --info=skip2 --recursive \
+  --keep-dirlinks $BUILDROOT/extra/* $BUILDROOT/
 
 ln -srf $BUILDROOT/usr/bin/busybox $BUILDROOT/init
 ln -srf $BUILDROOT/usr/bin/busybox $BUILDROOT/bin/sh
