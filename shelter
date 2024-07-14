@@ -339,7 +339,7 @@ is-active() {
 run() {
     start 1>&- 2>&-
 
-    debug "The guest vm is booting"
+    debug "The guest is booting"
 
     local wait_seconds=20
     debug "Now waiting ${wait_seconds} seconds for the guest to launch ..."
@@ -395,11 +395,11 @@ stop() {
 
     local cid="$(get_stage cid)"
 
-    debug "Send poweroff event to the guest vm"
+    debug "Send poweroff event to the guest"
     echo "/usr/bin/poweroff" | socat - vsock-connect:${cid}:4321
 
     local wait_seconds=20
-    debug "Now waiting ${wait_seconds} seconds for the guest vm to exit ..."
+    debug "Now waiting ${wait_seconds} seconds for the guest to exit ..."
 
     for ((i=${wait_seconds}; i>0; i--))
     do
