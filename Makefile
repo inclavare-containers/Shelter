@@ -23,8 +23,10 @@ _depend: # Install the build and runtime dependencies
 	    done; \
 	}; \
 	sudo apt update && \
-	  install_pkg "socat" "kmod" "busybox-static" "bubblewrap" "qemu-system-x86" \
-	    "git" "sudo" "sed" "gawk" "grep" "rsync" "openssl" "tar" "pipx" "python3-pip"
+	  install_pkg git sudo gawk grep python3-pip pipx \
+            coreutils gawk diffutils rsync libc-bin grep sed systemd socat \
+            busybox-static kmod bubblewrap qemu-system-x86 \
+            tar openssl
 
 	@pip install -y toml-cli
 
