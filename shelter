@@ -3,12 +3,13 @@
 . /etc/shelter.d/00_logger
 
 SHELTER_CONF="/etc/shelter.d"
+SHELTER_DEFAULT_STAGE="default"
+SHELTER_STAGE_DIR="/var/run/shelter/${SHELTER_DEFAULT_STAGE}"
+SHELTER_IMAGE="${SHELTER_STAGE_DIR}/image"
+SHELTER_KERNEL="${SHELTER_STAGE_DIR}/kernel"
 
-DEFAULT_DIR="/var/run/shelter/default"
-DEFAULT_IMAGE="${DEFAULT_DIR}/image"
-DEFAULT_KERNEL="${DEFAULT_DIR}/kernel"
-EXTRA_DIR="${DEFAULT_DIR}/extra"
-CONF="${DEFAULT_DIR}/build.conf"
+EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
+CONF="${SHELTER_STAGE_DIR}/build.conf"
 
 ESSENTIAL_BINARIES=("socat" "busybox" "kmod")
 ESSENTIAL_FILES=()
@@ -155,14 +156,14 @@ store_stage() {
     local name="$1"
     local val="$2"
 
-    echo -n "${val}" > "${DEFAULT_DIR}/${name}"
+    echo -n "${val}" > "${SHELTER_STAGE_DIR}/${name}"
 }
 
 get_stage() {
     local name="$1"
 
-    if [ -s "${DEFAULT_DIR}/${name}" ]; then
-        echo "$(cat ${DEFAULT_DIR}/${name})"
+    if [ -s "${SHELTER_STAGE_DIR}/${name}" ]; then
+        echo "$(cat ${SHELTER_STAGE_DIR}/${name})"
     fi
 
     echo ""
@@ -286,14 +287,14 @@ build() {
         copy_file_and_dir_no_resolve_symlink "$i"
     done
 
-    debug "Building initrd image: ${DEFAULT_IMAGE}"
+    debug "Building initrd image: ${SHELTER_IMAGE}"
 
     local kernel_version="$(uname -r)"
     mkosi -f --debug -C "${SHELTER_CONF}" \
       --build-script="${SHELTER_CONF}/mkosi.build" \
       --finalize-script="${SHELTER_CONF}/mkosi.finalize" \
       --postinst-script="${SHELTER_CONF}/mkosi.postinst" \
-      --output-dir="${DEFAULT_DIR}" --output="$(basename ${DEFAULT_IMAGE})" \
+      --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_IMAGE})" \
       --extra-tree="${EXTRA_DIR}:/extra" \
       --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
       build
@@ -302,10 +303,10 @@ build() {
         exit 1
     fi
 
-    debug "Copying kernel: ${DEFAULT_KERNEL}"
+    debug "Copying kernel: ${SHELTER_KERNEL}"
 
     if [ -s "/boot/vmlinuz-${kernel_version}" ]; then
-        cp -f "/boot/vmlinuz-${kernel_version}" "${DEFAULT_KERNEL}"
+        cp -f "/boot/vmlinuz-${kernel_version}" "${SHELTER_KERNEL}"
         return 0
     fi
 
@@ -314,20 +315,20 @@ build() {
 }
 
 start() {
-    if [[ -s "${DEFAULT_IMAGE}" && -s "${DEFAULT_KERNEL}" ]]; then
+    if [[ -s "${SHELTER_IMAGE}" && -s "${SHELTER_KERNEL}" ]]; then
         local cid=$(randomize)
         store_stage "cid" "${cid}"
 
         systemd-run --user -d -u shelter.service -p StandardInput=null -G \
           /usr/bin/qemu-system-x86_64 \
             -accel kvm -m 4g --nographic \
-            -kernel "${DEFAULT_KERNEL}" -initrd "${DEFAULT_IMAGE}" \
+            -kernel "${SHELTER_KERNEL}" -initrd "${SHELTER_IMAGE}" \
             -append "console=ttyS0" \
             -device vhost-vsock-pci,guest-cid=${cid}
 
         debug "The guest is started at CID ${cid}"
     else
-        error "The files ${DEFAULT_IMAGE} or ${DEFAULT_KERNEL} is missing. You may need to run 'shelter build' first."
+        error "The files ${SHELTER_IMAGE} or ${SHELTER_KERNEL} is missing. You may need to run 'shelter build' first."
         exit 1
     fi
 }
