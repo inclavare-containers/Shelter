@@ -8,6 +8,15 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
 
 ### Ubuntu 22.04
 
+0. 下载本仓库：
+  ```shell
+  https://github.com/inclavare-containers/Shelter.git -b 0.0.1
+  ```
+  或更新本仓库至最新版本:
+  ```shell
+  make sync
+  ```
+
 1. 安装编译时和运行时依赖
     ~~~sh
     make prepare

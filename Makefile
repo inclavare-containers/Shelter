@@ -1,6 +1,8 @@
 PREFIX ?= /usr/local
 CONFIG_DIR ?= /etc/shelter.d
 
+SHELL := /bin/bash
+
 .PHONE: help _depend prepare build clean install uninstall test all sync
 
 help:
@@ -64,3 +66,7 @@ all: # Equivalent to make prepare build install
 sync: # Sync up this source code
 	@git pull --recurse
 	@git submodule update --init
+
+version: # Show the version of Shelter
+	@echo -e "\033[1;32mVersion:\033[0m $$(cat VERSION.env)"
+	@echo -e "\033[1;32mCommit:\033[0m $$(git log -1 $$(git rev-list -n 1 $$(cat VERSION.env)))"
