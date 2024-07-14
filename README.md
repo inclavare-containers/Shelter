@@ -10,7 +10,7 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
 
 0. 下载本仓库：
   ```shell
-  https://github.com/inclavare-containers/Shelter.git -b 0.0.1
+  https://github.com/inclavare-containers/Shelter.git -b 0.0.2
   ```
   或更新本仓库至最新版本:
   ```shell
@@ -91,6 +91,20 @@ Options:
 Shelter默认构建的initramfs的发行版版本与host一致，支持的发行版有`debian`，`arch`，`opensuse`，`ubuntu`，`centos`，`rocky`，`alma`，`fedora`，`rhel-ubi`，`mageia`和`openmandriva`。
 
 通过配置[build.conf](./build.conf)文件，可以实现在执行Shelter构建时将指定的文件和二进制文件复制到initramfs中，并且可以自动复制其依赖的.so文件。
+
+### 配置Shelter
+
+Shelter的配置文件位于`/etc/shelter.conf`；格式为TOML。
+
+下面是一个示例：
+```toml
+vmm = "qemu"
+
+[qemu]
+bin = "/usr/bin/qemu-system-x86_64"
+mem = "4G"
+kern_cmdline = ""
+```
 
 ### 调试
 
