@@ -1,10 +1,12 @@
+include vars.mk
+
 PREFIX ?= /usr/local
 CONFIG_DIR ?= /etc/shelter.d
 CONFIG ?= /etc/shelter.conf
 
 SHELL := /bin/bash
 
-.PHONE: help _depend prepare build clean install uninstall test all sync
+.PHONE: help _depend prepare build clean install uninstall test all sync container
 
 help:
 	@grep -E '^[a-zA-Z][a-zA-Z0-9_-]+:.*?# .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?# "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -23,28 +25,31 @@ _depend: # Install the build and runtime dependencies
 	    done; \
 	}; \
 	sudo apt update && \
-	  install_pkg git sudo gawk grep python3-pip pipx \
-            coreutils gawk diffutils rsync libc-bin grep sed systemd socat \
+	  install_pkg coreutils git sudo gawk grep python3-socks python3-pip snapd \
+            diffutils rsync libc-bin sed systemd socat \
             busybox-static kmod bubblewrap qemu-system-x86 \
             tar openssl
 
-	@pip install -y toml-cli
+	@pip install toml-cli --proxy=$(HTTPS_PROXY)
 
 	@if ! which mkosi; then \
-	    sudo pipx install git+https://github.com/systemd/mkosi.git@v23.1; \
+	    git clone https://github.com/systemd/mkosi.git -b v23.1 && \
+	      ln -s "$$(pwd)/mkosi/bin/mkosi" "/usr/bin/mkosi"; \
 	else \
 	    true; \
 	fi
 
+	@if ! which docker; then \
+	    snap install -y docker; \
+	fi
+
 prepare: _depend # Download and configure the necessary components (network access required)
 
-build: _depend # Build the necessary components (network access not required)
+build: # Build the necessary components (network access not required)
 
 clean: # Clean the build artifacts
 
 install: # Install the build artifacts
-	sudo ln -sfn "$${HOME}/.local/bin/mkosi" "$(PREFIX)/mkosi"
-
 	@[ ! -d "$(CONFIG_DIR)" ] && { \
 	    sudo mkdir -p "$(CONFIG_DIR)"; \
 	} || true; \
@@ -76,6 +81,13 @@ all: # Equivalent to make prepare build install
 sync: # Sync up this source code
 	@git pull --recurse
 	@git submodule update --init
+
+container: # Create the Shelter container image
+	@docker build --network=host \
+	  --build-arg COMMIT=$(COMMIT) --build-arg USER_NAME=$(USER_NAME) \
+	  --build-arg USER_PASSWORD=$(USER_PASSWORD) \
+	  --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
+	  -t shelter:$$(cat VERSION.env) .
 
 version: # Show the version of Shelter
 	@echo -e "\033[1;32mVersion:\033[0m $$(cat VERSION.env)"

@@ -22,3 +22,6 @@ binary
 
 .cache
 .swp
+
+# Prevent from submitting the private information by accident
+vars.mk
