@@ -30,6 +30,21 @@ Options:
 EOF
 }
 
+randomize() {
+    local min=8
+    local max=$((2**16 - 1))
+    local r
+
+    while true; do
+        r=$(od -An -N2 -tu2 /dev/urandom | awk '{print $1}')
+        if [[ $r -ge $min && $r -le $max ]]; then
+            echo $r
+        break
+    fi
+
+    done
+}
+
 add_dir() {
     local dir_path=$1
 
@@ -134,6 +149,23 @@ copy_sodeps() {
             fi
         fi
     done
+}
+
+store_stage() {
+    local name="$1"
+    local val="$2"
+
+    echo -n "${val}" > "${DEFAULT_DIR}/${name}"
+}
+
+get_stage() {
+    local name="$1"
+
+    if [ -s "${DEFAULT_DIR}/${name}" ]; then
+        echo "$(cat ${DEFAULT_DIR}/${name})"
+    fi
+
+    echo ""
 }
 
 build() {
@@ -283,12 +315,17 @@ build() {
 
 start() {
     if [[ -s "${DEFAULT_IMAGE}" && -s "${DEFAULT_KERNEL}" ]]; then
+        local cid=$(randomize)
+        store_stage "cid" "${cid}"
+
         systemd-run --user -d -u shelter.service -p StandardInput=null -G \
           /usr/bin/qemu-system-x86_64 \
             -accel kvm -m 4g --nographic \
             -kernel "${DEFAULT_KERNEL}" -initrd "${DEFAULT_IMAGE}" \
             -append "console=ttyS0" \
-            -device vhost-vsock-pci,guest-cid=21
+            -device vhost-vsock-pci,guest-cid=${cid}
+
+        debug "The guest is started at CID ${cid}"
     else
         error "The files ${DEFAULT_IMAGE} or ${DEFAULT_KERNEL} is missing. You may need to run 'shelter build' first."
         exit 1
@@ -307,6 +344,7 @@ run() {
     local wait_seconds=20
     debug "Now waiting ${wait_seconds} seconds for the guest to launch ..."
 
+    local cid="$(get_stage cid)"
     local is_ready=0
 
     for ((i=${wait_seconds}; i>0; i--))
@@ -316,7 +354,7 @@ run() {
             return 1
         fi
 
-        if socat /dev/null vsock-connect:21:4321 1>&- 2>&-; then
+        if socat /dev/null vsock-connect:${cid}:4321 1>&- 2>&-; then
             # The guest is ready
             is_ready=1
             break
@@ -355,8 +393,10 @@ stop() {
         exit 0;
     fi
 
+    local cid="$(get_stage cid)"
+
     debug "Send poweroff event to the guest vm"
-    echo "/usr/bin/poweroff" | socat - vsock-connect:21:4321
+    echo "/usr/bin/poweroff" | socat - vsock-connect:${cid}:4321
 
     local wait_seconds=20
     debug "Now waiting ${wait_seconds} seconds for the guest vm to exit ..."
@@ -379,7 +419,8 @@ exec() {
         shift
     fi
 
-    echo "$@" | socat - vsock-connect:21:4321
+    local cid="$(get_stage cid)"
+    echo "$@" | socat - vsock-connect:${cid}:4321
 }
 
 clean() {
