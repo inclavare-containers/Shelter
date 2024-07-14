@@ -21,37 +21,40 @@ _depend: # Install the build and runtime dependencies
 	    fi; \
 	    done; \
 	}; \
-	apt update && \
-	  install_pkg "socat" "kmod" "git" "sudo" "rsync" "busybox-static" \
-	    "bubblewrap" "qemu-system-x86"
+	sudo apt update && \
+	  install_pkg "socat" "kmod" "busybox-static" "bubblewrap" "qemu-system-x86" \
+	    "git" "sudo" "sed" "gawk" "grep" "rsync" "openssl" "tar" "pipx"
+
+	@if ! which mkosi; then \
+	    sudo pipx install git+https://github.com/systemd/mkosi.git@v23.1; \
+	else \
+	    true; \
+	fi
 
 prepare: _depend # Download and configure the necessary components (network access required)
-	@[ ! -d "mkosi" ] && { \
-	    git clone https://github.com/systemd/mkosi --branch v23.1; \
-	} || true
 
 build: _depend # Build the necessary components (network access not required)
 
 clean: # Clean the build artifacts
 
 install: # Install the build artifacts
-	@[ -d "mkosi" ] && { \
-	    sudo cp -f mkosi/bin/mkosi "$(PREFIX)/bin"; \
-	} || true
+	sudo ln -sfn "$${HOME}/.local/bin/mkosi" "$(PREFIX)/mkosi"
 
 	@[ ! -d "$(CONFIG_DIR)" ] && { \
-	    mkdir -p "$(CONFIG_DIR)"; \
+	    sudo mkdir -p "$(CONFIG_DIR)"; \
 	} || true; \
-	cp -f 00_logger "$(CONFIG_DIR)"
-	cp -f mkosi.conf mkosi.build mkosi.finalize mkosi.postinst rcS "$(CONFIG_DIR)"
-	cp -a conf "$(CONFIG_DIR)"
+	sudo cp -f 00_logger "$(CONFIG_DIR)"
+	sudo cp -f mkosi.conf mkosi.build mkosi.finalize mkosi.postinst rcS "$(CONFIG_DIR)"
+	sudo cp -a conf "$(CONFIG_DIR)"
 
 	@sudo cp -f shelter "$(PREFIX)/bin"
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
-	  sudo rm -f mkosi shelter logger.sh; \
+	  sudo rm -f mkosi shelter; \
 	} || true
+
+	@sudo rm -rf "$(CONFIG_DIR)"
 
 test: # Run verify-signature demo with shelter
 	@./demos/verify-signature/gen-keypair.sh && \
