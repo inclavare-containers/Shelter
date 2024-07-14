@@ -1,5 +1,6 @@
 PREFIX ?= /usr/local
 CONFIG_DIR ?= /etc/shelter.d
+CONFIG ?= /etc/shelter.conf
 
 SHELL := /bin/bash
 
@@ -23,7 +24,9 @@ _depend: # Install the build and runtime dependencies
 	}; \
 	sudo apt update && \
 	  install_pkg "socat" "kmod" "busybox-static" "bubblewrap" "qemu-system-x86" \
-	    "git" "sudo" "sed" "gawk" "grep" "rsync" "openssl" "tar" "pipx"
+	    "git" "sudo" "sed" "gawk" "grep" "rsync" "openssl" "tar" "pipx" "python3-pip"
+
+	@pip install -y toml-cli
 
 	@if ! which mkosi; then \
 	    sudo pipx install git+https://github.com/systemd/mkosi.git@v23.1; \
@@ -48,6 +51,7 @@ install: # Install the build artifacts
 	sudo cp -a conf "$(CONFIG_DIR)"
 
 	@sudo cp -f shelter "$(PREFIX)/bin"
+	@sudo cp -f shelter.conf "$(CONFIG)"
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
@@ -55,6 +59,7 @@ uninstall: # Uninstall the build artifacts
 	} || true
 
 	@sudo rm -rf "$(CONFIG_DIR)"
+	@sudo rm -f "$(CONFIG)"
 
 test: # Run verify-signature demo with shelter
 	@./demos/verify-signature/gen-keypair.sh && \

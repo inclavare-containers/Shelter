@@ -2,7 +2,8 @@
 
 . /etc/shelter.d/00_logger
 
-SHELTER_CONF="/etc/shelter.d"
+SHELTER_CONF="/etc/shelter.conf"
+SHELTER_CONF_DIR="/etc/shelter.d"
 SHELTER_DEFAULT_STAGE="default"
 SHELTER_STAGE_DIR="/var/run/shelter/${SHELTER_DEFAULT_STAGE}"
 SHELTER_IMAGE="${SHELTER_STAGE_DIR}/image"
@@ -290,10 +291,10 @@ build() {
     debug "Building initrd image: ${SHELTER_IMAGE}"
 
     local kernel_version="$(uname -r)"
-    mkosi -f --debug -C "${SHELTER_CONF}" \
-      --build-script="${SHELTER_CONF}/mkosi.build" \
-      --finalize-script="${SHELTER_CONF}/mkosi.finalize" \
-      --postinst-script="${SHELTER_CONF}/mkosi.postinst" \
+    mkosi -f --debug -C "${SHELTER_CONF_DIR}" \
+      --build-script="${SHELTER_CONF_DIR}/mkosi.build" \
+      --finalize-script="${SHELTER_CONF_DIR}/mkosi.finalize" \
+      --postinst-script="${SHELTER_CONF_DIR}/mkosi.postinst" \
       --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_IMAGE})" \
       --extra-tree="${EXTRA_DIR}:/extra" \
       --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
@@ -314,17 +315,55 @@ build() {
     exit 1
 }
 
+get_conf() {
+    local name="$1"
+
+    toml get --toml-path "${SHELTER_CONF}" "${name}"
+}
+
+config_qemu() {
+    local bin="$1"
+    local mem="$2"
+    local kern_cmd="$3"
+    local cid="$4"
+
+    if [ x"${bin}" = x"" ]; then
+        bin="qemu-system-x86_64"
+    fi
+
+    if [ x"${mem}" = x"" ]; then
+        mem="4G"
+    fi
+
+    kern_cmd="${kern_cmd} console=ttyS0"
+
+    local opts="$(cat <<EOF
+-accel kvm -m ${mem} -nographic
+-kernel '${SHELTER_KERNEL}' -initrd '${SHELTER_IMAGE}'
+-append '${kern_cmd}'
+-device vhost-vsock-pci,guest-cid=${cid}
+EOF
+)"
+    echo -n "${bin} ${opts}"
+}
+
 start() {
     if [[ -s "${SHELTER_IMAGE}" && -s "${SHELTER_KERNEL}" ]]; then
         local cid=$(randomize)
         store_stage "cid" "${cid}"
 
-        systemd-run --user -d -u shelter.service -p StandardInput=null -G \
-          /usr/bin/qemu-system-x86_64 \
-            -accel kvm -m 4g --nographic \
-            -kernel "${SHELTER_KERNEL}" -initrd "${SHELTER_IMAGE}" \
-            -append "console=ttyS0" \
-            -device vhost-vsock-pci,guest-cid=${cid}
+        local vmm="$(get_conf vmm)"
+        local cmd=""
+        if [ x"${vmm}" = x"qemu" ]; then
+            local bin="$(get_conf ${vmm}.bin)"
+            local mem="$(get_conf ${vmm}.mem)"
+            local kern_cmdline="$(get_conf ${vmm}.kern_cmdline)"
+
+            cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}")"
+        fi
+
+        eval cmd=("$cmd")
+        systemd-run --user -d -u shelter.service -p StandardInput=null -G "${cmd[@]}"
 
         debug "The guest is started at CID ${cid}"
     else
