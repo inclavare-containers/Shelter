@@ -10,7 +10,7 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
 
 0. 下载本仓库：
   ```shell
-  https://github.com/inclavare-containers/Shelter.git -b 0.0.3
+  https://github.com/inclavare-containers/Shelter.git -b 0.0.4
   ```
   或更新本仓库至最新版本:
   ```shell
