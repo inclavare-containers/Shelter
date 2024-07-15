@@ -266,7 +266,7 @@ build() {
         fi
 
         if [[ ! $src =~ ^/ ]]; then
-            src="$conf_dir/$src"
+            src="$src_dir/$src"
         fi
 
         src="$(realpath $src)"
