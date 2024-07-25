@@ -326,6 +326,7 @@ config_qemu() {
     local mem="$2"
     local kern_cmd="$3"
     local cid="$4"
+    local extra_opts="$5"
 
     if [ x"${bin}" = x"" ]; then
         bin="qemu-system-x86_64"
@@ -344,7 +345,7 @@ config_qemu() {
 -device vhost-vsock-pci,guest-cid=${cid}
 EOF
 )"
-    echo -n "${bin} ${opts}"
+    echo -n "${bin} ${opts} ${extra_opts}"
 }
 
 start() {
@@ -358,8 +359,9 @@ start() {
             local bin="$(get_conf ${vmm}.bin)"
             local mem="$(get_conf ${vmm}.mem)"
             local kern_cmdline="$(get_conf ${vmm}.kern_cmdline)"
+            local opts="$(get_conf ${vmm}.opts)"
 
-            cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}")"
+            cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}" "${opts}")"
         fi
 
         eval cmd=("$cmd")
