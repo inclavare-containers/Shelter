@@ -33,7 +33,7 @@ _depend: # Install the build and runtime dependencies
 	@pip install toml-cli --proxy=$(HTTPS_PROXY)
 
 	@if ! which mkosi; then \
-	    git clone https://github.com/systemd/mkosi.git -b v23.1 && \
+	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 && \
 	      ln -s "$$(pwd)/mkosi/bin/mkosi" "/usr/bin/mkosi"; \
 	else \
 	    true; \
