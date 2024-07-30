@@ -198,7 +198,7 @@ build() {
     rm -rf "$EXTRA_DIR"
 
     if [ ! -d "$EXTRA_DIR" ]; then
-        mkdir "$EXTRA_DIR"
+        mkdir -p "$EXTRA_DIR"
     fi
 
     local binaries=()
