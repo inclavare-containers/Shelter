@@ -40,7 +40,7 @@ _depend: # Install the build and runtime dependencies
 	fi
 
 	@if ! which docker; then \
-	    snap install -y docker; \
+	    sudo apt-get install -y docker.io; \
 	fi
 
 prepare: _depend # Download and configure the necessary components (network access required)
