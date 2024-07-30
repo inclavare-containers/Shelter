@@ -6,13 +6,46 @@ CONFIG ?= /etc/shelter.conf
 
 SHELL := /bin/bash
 
-.PHONE: help _depend prepare build clean install uninstall test all sync container
+.PHONE: help _depend_redhat _depend_debian _depend prepare build clean install uninstall test all sync container
 
 help:
 	@grep -E '^[a-zA-Z][a-zA-Z0-9_-]+:.*?# .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?# "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	@echo -e "\033[1;31mPlease read README.md for the details\033[0m"
 
-_depend: # Install the build and runtime dependencies
+_depend_redhat: # Install the build and runtime dependencies on redhat-like system
+	@install_pkg() { \
+	  for p in "$$@"; do \
+	    rpm -qi "$$p" >/dev/null 2>&1 && continue; \
+	    echo "Installing the package \"$$p\" ..."; \
+	    sudo yum install -y "$$p"; \
+	    if [ $$? -ne 0 ]; then \
+	      echo "Failed to install the package \"$$p\""; \
+	      exit 1; \
+	    fi; \
+	  done; \
+	}; \
+	sudo true && \
+	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip \
+	  diffutils rsync sed systemd socat podman-docker \
+	  busybox kmod bubblewrap qemu-kvm \
+	  tar openssl
+
+	# Work around the python 3.6 lower than the requirement from mkosi
+	@sudo ln -sfn `which python3.11` `which python3`
+
+	# Work around mkosi for /usr/lib/os-release. See 1149444ef for the details
+	@sudo ln -sfn /etc/os-release /usr/lib/os-release
+
+	@pip3 install toml-cli --proxy=$(HTTPS_PROXY)
+
+	@if ! which mkosi; then \
+	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 && \
+	      ln -sfn "$$(pwd)/mkosi/bin/mkosi" "/usr/bin/mkosi"; \
+	else \
+	    true; \
+	fi
+
+_depend_debian: # Install the build and runtime dependencies on debian-like system
 	@install_pkg() { \
 	  for p in "$$@"; do \
 	    dpkg -l "$$p" >/dev/null 2>&1 && continue; \
@@ -20,9 +53,9 @@ _depend: # Install the build and runtime dependencies
 	    sudo apt-get install -y "$$p"; \
 	    if [ $$? -ne 0 ]; then \
 	      echo "Failed to install the package \"$$p\""; \
-	      exit $${err}; \
+	      exit 1; \
 	    fi; \
-	    done; \
+	  done; \
 	}; \
 	sudo apt update && \
 	  install_pkg coreutils git sudo gawk grep python3-socks python3-pip snapd \
@@ -41,6 +74,16 @@ _depend: # Install the build and runtime dependencies
 
 	@if ! which docker; then \
 	    sudo apt-get install -y docker.io; \
+	fi
+
+_depend: # Install the build and runtime dependencies
+	@if [ -f "/etc/redhat-release" ]; then \
+	    $(MAKE) _depend_redhat; \
+	elif [ -f "/etc/debian_version" ]; then \
+	    $(MAKE) _depend_debian; \
+	else \
+	    echo "Unsupported system"; \
+	    exit 1; \
 	fi
 
 prepare: _depend # Download and configure the necessary components (network access required)
