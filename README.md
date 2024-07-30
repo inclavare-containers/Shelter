@@ -68,7 +68,7 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
 
 ### 构建Shelter容器镜像
 
-首先需要编辑vars.mk，将个人的github登录名和密码输入到USER_NAME和USER_PASSWORD变量中。
+首先需要编辑vars.mk，将个人的github登录名和密码配置到USER_NAME和USER_PASSWORD变量中；必要的话可以将网络代理服务器的地址配置到HTTPS_PROXY变量中。
 
 然后执行以下命令构建出Shelter容器镜像：
 ```shell
