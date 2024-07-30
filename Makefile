@@ -34,7 +34,7 @@ _depend: # Install the build and runtime dependencies
 
 	@if ! which mkosi; then \
 	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 && \
-	      ln -s "$$(pwd)/mkosi/bin/mkosi" "/usr/bin/mkosi"; \
+	      ln -sfn "$$(pwd)/mkosi/bin/mkosi" "/usr/bin/mkosi"; \
 	else \
 	    true; \
 	fi
