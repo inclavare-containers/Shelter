@@ -27,7 +27,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	sudo true && \
 	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip \
 	  diffutils rsync sed systemd socat podman-docker \
-	  busybox kmod bubblewrap qemu-kvm \
+	  busybox kmod bubblewrap qemu-kvm zstd \
 	  tar openssl
 
 	# Work around the python 3.6 lower than the requirement from mkosi
@@ -60,7 +60,7 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	sudo apt update && \
 	  install_pkg coreutils git sudo gawk grep python3-socks python3-pip snapd \
             diffutils rsync libc-bin sed systemd socat \
-            busybox-static kmod bubblewrap qemu-system-x86 \
+            busybox-static kmod bubblewrap qemu-system-x86 zstd \
             tar openssl
 
 	@pip install toml-cli --proxy=$(HTTPS_PROXY)
