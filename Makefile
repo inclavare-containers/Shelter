@@ -6,6 +6,15 @@ CONFIG ?= /etc/shelter.conf
 
 SHELL := /bin/bash
 
+IS_DEBIAN := $(shell \
+    if [ -s "/etc/debian_version" ]; then \
+        echo true; \
+    elif [ -e "/etc/redhat-release" ]; then \
+        echo false; \
+    else \
+        echo unknown; \
+    fi)
+
 .PHONE: help _depend_redhat _depend_debian _depend prepare build clean install uninstall test all sync container
 
 help:
@@ -83,14 +92,14 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	fi
 
 _depend: # Install the build and runtime dependencies
-	@if [ -f "/etc/redhat-release" ]; then \
-	    $(MAKE) _depend_redhat; \
-	elif [ -f "/etc/debian_version" ]; then \
-	    $(MAKE) _depend_debian; \
-	else \
-	    echo "Unsupported system"; \
-	    exit 1; \
-	fi
+ifeq ($(IS_DEBIAN), true)
+	@$(MAKE) _depend_debian
+else ifeq ($(IS_DEBIAN), false)
+	@$(MAKE) _depend_redhat
+else
+	@echo "Unknown Linux distribution"; \
+	exit 1
+endif
 
 prepare: _depend # Download and configure the necessary components (network access required)
 
@@ -107,7 +116,15 @@ install: # Install the build artifacts
 	sudo cp -a conf "$(CONFIG_DIR)"
 
 	@sudo cp -f shelter "$(PREFIX)/bin"
-	@sudo cp -f shelter.conf "$(CONFIG)"
+
+ifeq ($(IS_DEBIAN), true)
+	@sudo cp -f shelter.debian.conf "$(CONFIG)"
+else ifeq ($(IS_DEBIAN), false)
+	@sudo cp -f shelter.redhat.conf "$(CONFIG)"
+else
+	@echo "Unknown Linux distribution"; \
+	exit 1
+endif
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
