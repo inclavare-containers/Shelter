@@ -40,7 +40,10 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 
 	@if ! which mkosi; then \
 	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 && \
-	      ln -sfn "$$(pwd)/mkosi/bin/mkosi" "/usr/bin/mkosi"; \
+	      cd mkosi && git config user.name "shelter-dev"; \
+	      git config user.email "shelter-dev@shelter.dev"; \
+	      git am ../patches/mkosi-v23_1-support-Aliyun-Linux-3.patch && \
+	      ln -sfn "$$(pwd)/bin/mkosi" "/usr/bin/mkosi"; \
 	else \
 	    true; \
 	fi
@@ -67,7 +70,10 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 
 	@if ! which mkosi; then \
 	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 && \
-	      ln -sfn "$$(pwd)/mkosi/bin/mkosi" "/usr/bin/mkosi"; \
+	      cd mkosi && git config user.name "shelter-dev"; \
+	      git config user.email "shelter-dev@shelter.dev"; \
+	      git am ../patches/mkosi-v23_1-support-Aliyun-Linux-3.patch && \
+	      ln -sfn "$$(pwd)/bin/mkosi" "/usr/bin/mkosi"; \
 	else \
 	    true; \
 	fi

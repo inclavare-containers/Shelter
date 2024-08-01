@@ -1,0 +1,237 @@
+From b72764aed1aa60bbd52a47d91910d9f69db14b54 Mon Sep 17 00:00:00 2001
+From: Jia Zhang <zhang.jia@linux.alibaba.com>
+Date: Thu, 1 Aug 2024 11:01:09 +0800
+Subject: [PATCH] mkosi: support Aliyun Linux 3
+
+Signed-off-by: Jia Zhang <zhang.jia@linux.alibaba.com>
+---
+ mkosi.conf.d/20-centos.conf                   |  1 +
+ mkosi.conf.d/30-centos-fedora/mkosi.conf      |  1 +
+ mkosi/__init__.py                             |  9 +++-
+ mkosi/config.py                               |  2 +
+ mkosi/distributions/__init__.py               |  9 +++-
+ mkosi/distributions/alinux.py                 | 48 +++++++++++++++++++
+ .../mkosi.conf.d/10-centos-fedora.conf        |  1 +
+ .../mkosi-initrd/mkosi.conf.d/10-centos.conf  |  1 +
+ .../mkosi.conf.d/10-centos-fedora/mkosi.conf  |  1 +
+ .../mkosi-tools/mkosi.conf.d/10-centos.conf   |  1 +
+ 10 files changed, 71 insertions(+), 3 deletions(-)
+ create mode 100644 mkosi/distributions/alinux.py
+
+diff --git a/mkosi.conf.d/20-centos.conf b/mkosi.conf.d/20-centos.conf
+index 833475a7..ad7f5e77 100644
+--- a/mkosi.conf.d/20-centos.conf
++++ b/mkosi.conf.d/20-centos.conf
+@@ -4,6 +4,7 @@
+ Distribution=|centos
+ Distribution=|alma
+ Distribution=|rocky
++Distribution=|alinux
+ 
+ [Distribution]
+ @Release=9
+diff --git a/mkosi.conf.d/30-centos-fedora/mkosi.conf b/mkosi.conf.d/30-centos-fedora/mkosi.conf
+index 5d37deb3..af7aa5c8 100644
+--- a/mkosi.conf.d/30-centos-fedora/mkosi.conf
++++ b/mkosi.conf.d/30-centos-fedora/mkosi.conf
+@@ -5,6 +5,7 @@ Distribution=|centos
+ Distribution=|alma
+ Distribution=|rocky
+ Distribution=|fedora
++Distribution=|alinux
+ 
+ [Content]
+ Packages=
+diff --git a/mkosi/__init__.py b/mkosi/__init__.py
+index 0405f56c..658ba6a1 100644
+--- a/mkosi/__init__.py
++++ b/mkosi/__init__.py
+@@ -210,6 +210,8 @@ def check_root_populated(context: Context) -> None:
+ 
+     """Check that the root was populated by looking for a os-release file."""
+     osrelease = context.root / "usr/lib/os-release"
++    if not osrelease.exists():
++        osrelease = context.root / "etc/os-release"
+     if not osrelease.exists():
+         die(
+             f"{osrelease} not found.",
+@@ -228,7 +230,7 @@ def configure_os_release(context: Context) -> None:
+     if context.config.overlay or context.config.output_format in (OutputFormat.sysext, OutputFormat.confext):
+         return
+ 
+-    for candidate in ["usr/lib/os-release", "usr/lib/initrd-release"]:
++    for candidate in ["usr/lib/os-release", "etc/os-release", "usr/lib/initrd-release"]:
+         osrelease = context.root / candidate
+         # at this point we know we will either change or add to the file
+         newosrelease = osrelease.with_suffix(".new")
+@@ -267,7 +269,10 @@ def configure_extension_release(context: Context) -> None:
+     p = context.root / d / f"extension-release.d/extension-release.{context.config.output}"
+     p.parent.mkdir(parents=True, exist_ok=True)
+ 
+-    osrelease = read_env_file(q) if (q := context.root / "usr/lib/os-release").exists() else {}
++    q = context.root / "usr/lib/os-release"
++    if not q.exists():
++        q = context.root / "etc/os-release"
++    osrelease = read_env_file(q)
+     extrelease = read_env_file(p) if p.exists() else {}
+     new = p.with_suffix(".new")
+ 
+diff --git a/mkosi/config.py b/mkosi/config.py
+index ec86ee6c..6457da3d 100644
+--- a/mkosi/config.py
++++ b/mkosi/config.py
+@@ -678,6 +678,8 @@ def config_default_compression(namespace: argparse.Namespace) -> Compression:
+     if namespace.output_format in (OutputFormat.tar, OutputFormat.cpio, OutputFormat.uki, OutputFormat.esp):
+         if namespace.distribution == Distribution.ubuntu and namespace.release == "focal":
+             return Compression.xz
++        elif namespace.distribution == Distribution.alinux:
++            return Compression.gz
+         else:
+             return Compression.zstd
+     elif namespace.output_format == OutputFormat.oci:
+diff --git a/mkosi/distributions/__init__.py b/mkosi/distributions/__init__.py
+index 7e04b269..174482b4 100644
+--- a/mkosi/distributions/__init__.py
++++ b/mkosi/distributions/__init__.py
+@@ -6,6 +6,7 @@ import re
+ import urllib.parse
+ from collections.abc import Sequence
+ from typing import TYPE_CHECKING, Optional, cast
++from pathlib import Path
+ 
+ from mkosi.util import StrEnum, read_env_file
+ 
+@@ -91,6 +92,7 @@ class Distribution(StrEnum):
+     openmandriva = enum.auto()
+     rocky        = enum.auto()
+     alma         = enum.auto()
++    alinux       = enum.auto()
+     custom       = enum.auto()
+ 
+     def is_centos_variant(self) -> bool:
+@@ -100,6 +102,7 @@ class Distribution(StrEnum):
+             Distribution.rocky,
+             Distribution.rhel,
+             Distribution.rhel_ubi,
++            Distribution.alinux,
+         )
+ 
+     def is_apt_distribution(self) -> bool:
+@@ -154,7 +157,11 @@ class Distribution(StrEnum):
+ 
+ def detect_distribution() -> tuple[Optional[Distribution], Optional[str]]:
+     try:
+-        os_release = read_env_file("/usr/lib/os-release")
++        filename = Path("/") / "etc/os-release"
++        if not filename.exists():
++            filename = Path("/") / "etc/os-release"
++
++        os_release = read_env_file(filename)
+     except FileNotFoundError:
+         return None, None
+ 
+diff --git a/mkosi/distributions/alinux.py b/mkosi/distributions/alinux.py
+new file mode 100644
+index 00000000..8d0b4783
+--- /dev/null
++++ b/mkosi/distributions/alinux.py
+@@ -0,0 +1,48 @@
++# SPDX-License-Identifier: LGPL-2.1+
++
++from mkosi.context import Context
++from mkosi.distributions import centos, join_mirror
++from mkosi.installer.rpm import RpmRepository, find_rpm_gpgkey, setup_rpm
++from mkosi.installer.dnf import Dnf
++from mkosi.util import listify
++from collections.abc import Iterable
++
++
++class Installer(centos.Installer):
++    @classmethod
++    def pretty_name(cls) -> str:
++        return "Aliyun Linux"
++
++    @classmethod
++    def setup(cls, context: Context) -> None:
++        Dnf.setup(context, cls.repositories(context))
++        setup_rpm(context, dbpath=cls.dbpath(context))
++
++    @staticmethod
++    def gpgurls(context: Context) -> tuple[str, ...]:
++        return (
++            find_rpm_gpgkey(
++                context,
++                f"RPM-GPG-KEY-AlmaLinux-{context.config.release}",
++            ) or f"http://mirrors.cloud.aliyuncs.com/alinux/{context.config.release}/RPM-GPG-KEY-ALINUX-{context.config.release}",
++        )
++
++    @classmethod
++    def repository_variants(cls, context: Context, repo: str) -> list[RpmRepository]:
++        url = f"baseurl=http://mirrors.cloud.aliyuncs.com/alinux/$releasever/{repo.lower()}/$basearch"
++        return [RpmRepository(repo, url, cls.gpgurls(context))]
++
++    @classmethod
++    @listify
++    def repositories(cls, context: Context) -> Iterable[RpmRepository]:
++        yield from cls.repository_variants(context, "os")
++        yield from cls.repository_variants(context, "updates")
++        yield from cls.repository_variants(context, "module")
++        yield from cls.repository_variants(context, "plus")
++        yield from cls.repository_variants(context, "powertools")
++
++        yield from cls.sig_repositories(context)
++
++    @classmethod
++    def sig_repositories(cls, context: Context) -> list[RpmRepository]:
++        return []
+diff --git a/mkosi/resources/mkosi-initrd/mkosi.conf.d/10-centos-fedora.conf b/mkosi/resources/mkosi-initrd/mkosi.conf.d/10-centos-fedora.conf
+index cd588162..33c17e24 100644
+--- a/mkosi/resources/mkosi-initrd/mkosi.conf.d/10-centos-fedora.conf
++++ b/mkosi/resources/mkosi-initrd/mkosi.conf.d/10-centos-fedora.conf
+@@ -6,6 +6,7 @@ Distribution=|centos
+ Distribution=|alma
+ Distribution=|rocky
+ Distribution=|rhel
++Distribution=|alinux
+ 
+ [Content]
+ Packages=
+diff --git a/mkosi/resources/mkosi-initrd/mkosi.conf.d/10-centos.conf b/mkosi/resources/mkosi-initrd/mkosi.conf.d/10-centos.conf
+index eda3177a..f969ee4a 100644
+--- a/mkosi/resources/mkosi-initrd/mkosi.conf.d/10-centos.conf
++++ b/mkosi/resources/mkosi-initrd/mkosi.conf.d/10-centos.conf
+@@ -5,6 +5,7 @@ Distribution=|centos
+ Distribution=|alma
+ Distribution=|rocky
+ Distribution=|rhel
++Distribution=|alinux
+ 
+ [Content]
+ Packages=
+diff --git a/mkosi/resources/mkosi-tools/mkosi.conf.d/10-centos-fedora/mkosi.conf b/mkosi/resources/mkosi-tools/mkosi.conf.d/10-centos-fedora/mkosi.conf
+index b1767677..57405dce 100644
+--- a/mkosi/resources/mkosi-tools/mkosi.conf.d/10-centos-fedora/mkosi.conf
++++ b/mkosi/resources/mkosi-tools/mkosi.conf.d/10-centos-fedora/mkosi.conf
+@@ -6,6 +6,7 @@ Distribution=|alma
+ Distribution=|rocky
+ Distribution=|rhel
+ Distribution=|fedora
++Distribution=|alinux
+ 
+ [Content]
+ Packages=
+diff --git a/mkosi/resources/mkosi-tools/mkosi.conf.d/10-centos.conf b/mkosi/resources/mkosi-tools/mkosi.conf.d/10-centos.conf
+index 8aa105a1..fdec9152 100644
+--- a/mkosi/resources/mkosi-tools/mkosi.conf.d/10-centos.conf
++++ b/mkosi/resources/mkosi-tools/mkosi.conf.d/10-centos.conf
+@@ -5,6 +5,7 @@ Distribution=|centos
+ Distribution=|alma
+ Distribution=|rocky
+ Distribution=|rhel
++Distribution=|alinux
+ 
+ [Distribution]
+ Repositories=
+-- 
+2.43.5
+
