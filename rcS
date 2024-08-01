@@ -1,5 +1,9 @@
 #!/bin/sh
-/usr/bin/busybox --install -s /usr/bin/
+
+BUSYBOX="/usr/bin/busybox"
+[ ! -x "$BUSYBOX" ] && BUSYBOX="/usr/sbin/busybox"
+
+$BUSYBOX --install -s /usr/bin/
 
 mount -t tmpfs tmpfs /dev
 mount -t proc proc /proc
@@ -7,7 +11,7 @@ mount -t sysfs sysfs /sys
 mkdir /dev/pts
 mount -t devpts devpts /dev/pts
 
-echo /sbin/mdev > /proc/sys/kernel/hotplug 
+echo `which mdev` > /proc/sys/kernel/hotplug
 mdev -s
 
 /usr/bin/modprobe -a vhost_vsock vmw_vsock_virtio_transport

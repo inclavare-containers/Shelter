@@ -18,8 +18,11 @@ echo "ARTIFACTDIR: $ARTIFACTDIR"
 rsync -v --checksum --links --info=skip2 --recursive \
   --keep-dirlinks $BUILDROOT/extra/* $BUILDROOT/
 
-ln -srf $BUILDROOT/usr/bin/busybox $BUILDROOT/init
-ln -srf $BUILDROOT/usr/bin/busybox $BUILDROOT/bin/sh
+BUSYBOX="$BUILDROOT/usr/bin/busybox"
+[ ! -x "$BUSYBOX" ] && BUSYBOX="$BUILDROOT/usr/sbin/busybox"
+
+ln -srf "$BUSYBOX" "$BUILDROOT/init"
+ln -srf "$BUSYBOX" "$BUILDROOT/bin/sh"
 
 for link_name in {lsmod,rmmod,insmod,modinfo,modprobe,depmod}; do
     ln -srf $BUILDROOT/usr/bin/kmod $BUILDROOT/usr/bin/$link_name
