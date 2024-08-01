@@ -25,3 +25,6 @@ binary
 
 # Prevent from submitting the private information by accident
 vars.mk
+
+# Ignore the local mkosi clone
+mkosi
