@@ -365,7 +365,7 @@ start() {
         fi
 
         eval cmd=("$cmd")
-        systemd-run --user -d -u shelter.service -p StandardInput=null -G "${cmd[@]}"
+        systemd-run --user --description=Shelter --unit=shelter.service -p StandardInput=null -G "${cmd[@]}"
 
         debug "The guest is started at CID ${cid}"
     else
