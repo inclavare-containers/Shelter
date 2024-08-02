@@ -1,4 +1,4 @@
-From b72764aed1aa60bbd52a47d91910d9f69db14b54 Mon Sep 17 00:00:00 2001
+From bf7f4ba67a8f28f45490f007bdd98214ed142897 Mon Sep 17 00:00:00 2001
 From: Jia Zhang <zhang.jia@linux.alibaba.com>
 Date: Thu, 1 Aug 2024 11:01:09 +0800
 Subject: [PATCH] mkosi: support Aliyun Linux 3
@@ -7,15 +7,15 @@ Signed-off-by: Jia Zhang <zhang.jia@linux.alibaba.com>
 ---
  mkosi.conf.d/20-centos.conf                   |  1 +
  mkosi.conf.d/30-centos-fedora/mkosi.conf      |  1 +
- mkosi/__init__.py                             |  9 +++-
+ mkosi/__init__.py                             |  9 ++-
  mkosi/config.py                               |  2 +
- mkosi/distributions/__init__.py               |  9 +++-
- mkosi/distributions/alinux.py                 | 48 +++++++++++++++++++
+ mkosi/distributions/__init__.py               |  9 ++-
+ mkosi/distributions/alinux.py                 | 62 +++++++++++++++++++
  .../mkosi.conf.d/10-centos-fedora.conf        |  1 +
  .../mkosi-initrd/mkosi.conf.d/10-centos.conf  |  1 +
  .../mkosi.conf.d/10-centos-fedora/mkosi.conf  |  1 +
  .../mkosi-tools/mkosi.conf.d/10-centos.conf   |  1 +
- 10 files changed, 71 insertions(+), 3 deletions(-)
+ 10 files changed, 85 insertions(+), 3 deletions(-)
  create mode 100644 mkosi/distributions/alinux.py
 
 diff --git a/mkosi.conf.d/20-centos.conf b/mkosi.conf.d/20-centos.conf
@@ -132,18 +132,20 @@ index 7e04b269..174482b4 100644
  
 diff --git a/mkosi/distributions/alinux.py b/mkosi/distributions/alinux.py
 new file mode 100644
-index 00000000..8d0b4783
+index 00000000..0e6d968f
 --- /dev/null
 +++ b/mkosi/distributions/alinux.py
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,62 @@
 +# SPDX-License-Identifier: LGPL-2.1+
++
++from collections.abc import Iterable
++from pathlib import Path
 +
 +from mkosi.context import Context
 +from mkosi.distributions import centos, join_mirror
 +from mkosi.installer.rpm import RpmRepository, find_rpm_gpgkey, setup_rpm
 +from mkosi.installer.dnf import Dnf
 +from mkosi.util import listify
-+from collections.abc import Iterable
 +
 +
 +class Installer(centos.Installer):
@@ -158,16 +160,28 @@ index 00000000..8d0b4783
 +
 +    @staticmethod
 +    def gpgurls(context: Context) -> tuple[str, ...]:
++        if (Path("/") / "etc/yum.repos.d/AliYun.repo").exists():
++            site = "mirrors.cloud.aliyuncs.com"
++        else:
++            site = "yum.tbsite.net"
++
++        url = f"http://{site}/alinux/{context.config.release}/RPM-GPG-KEY-ALINUX-{context.config.release}"
++
 +        return (
 +            find_rpm_gpgkey(
 +                context,
 +                f"RPM-GPG-KEY-AlmaLinux-{context.config.release}",
-+            ) or f"http://mirrors.cloud.aliyuncs.com/alinux/{context.config.release}/RPM-GPG-KEY-ALINUX-{context.config.release}",
++            ) or url,
 +        )
 +
 +    @classmethod
 +    def repository_variants(cls, context: Context, repo: str) -> list[RpmRepository]:
-+        url = f"baseurl=http://mirrors.cloud.aliyuncs.com/alinux/$releasever/{repo.lower()}/$basearch"
++        if (Path("/") / "etc/yum.repos.d/AliYun.repo").exists():
++            site = "mirrors.cloud.aliyuncs.com"
++        else:
++            site = "yum.tbsite.net"
++
++        url = f"baseurl=http://{site}/alinux/$releasever/{repo.lower()}/$basearch"
 +        return [RpmRepository(repo, url, cls.gpgurls(context))]
 +
 +    @classmethod
@@ -233,5 +247,5 @@ index 8aa105a1..fdec9152 100644
  [Distribution]
  Repositories=
 -- 
-2.43.5
+2.41.0
 

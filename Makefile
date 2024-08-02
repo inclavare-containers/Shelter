@@ -15,6 +15,28 @@ IS_DEBIAN := $(shell \
         echo unknown; \
     fi)
 
+ifeq ($(IS_DEBIAN), false)
+IS_APSARA := $(shell \
+    if [ -s "/etc/yum.repos.d/AlinuxApsara.repo" ]; then \
+        echo true; \
+    else \
+        echo false; \
+    fi)
+else
+IS_APSARA := false
+endif
+
+ifeq ($(IS_DEBIAN), false)
+IS_APSARA := $(shell \
+    if [ -s "/etc/yum.repos.d/AlinuxApsara.repo" ]; then \
+        echo true; \
+    else \
+        echo false; \
+    fi)
+else
+IS_APSARA := false
+endif
+
 .PHONE: help _depend_redhat _depend_debian _depend prepare build clean install uninstall test all sync container
 
 help:
@@ -24,20 +46,26 @@ help:
 _depend_redhat: # Install the build and runtime dependencies on redhat-like system
 	@install_pkg() { \
 	  for p in "$$@"; do \
-	    rpm -qi "$$p" >/dev/null 2>&1 && continue; \
-	    echo "Installing the package \"$$p\" ..."; \
-	    sudo yum install -y "$$p"; \
+	    local _p="$$p"; \
+	    [[ "$$p" == +* ]] && _p="$${p:1}"; \
+	    rpm -qi "$$_p" >/dev/null 2>&1 && continue; \
+	    echo "Installing the package \"$$_p\" ..."; \
+	    sudo yum install -y "$$_p"; \
 	    if [ $$? -ne 0 ]; then \
-	      echo "Failed to install the package \"$$p\""; \
+	      if [ "$_p" != "$p" ]; then \
+	        echo "Skip installing the absent package \"$$_p\""; \
+	        continue; \
+	      fi; \
+	      echo "Failed to install the package \"$$_p\""; \
 	      exit 1; \
 	    fi; \
 	  done; \
 	}; \
 	sudo true && \
 	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip \
-	  diffutils rsync sed systemd socat podman-docker \
-	  busybox kmod bubblewrap qemu-kvm zstd \
-	  tar openssl
+	    diffutils rsync sed systemd socat podman-docker \
+	    +busybox kmod bubblewrap qemu-kvm zstd \
+	    tar openssl
 
 	# Work around the python 3.6 lower than the requirement from mkosi
 	@sudo ln -sfn `which python3.11` `which python3`
@@ -45,17 +73,19 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	# Work around mkosi for /usr/lib/os-release. See 1149444ef for the details
 	@sudo ln -sfn /etc/os-release /usr/lib/os-release
 
+ifeq ($(IS_APSARA), false)
 	@pip3 install toml-cli --proxy=$(HTTPS_PROXY)
 
 	@if ! which mkosi; then \
-	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 && \
-	      cd mkosi && git config user.name "shelter-dev"; \
+	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 libexec/mkosi && \
+	      cd libexec/mkosi && git config user.name "shelter-dev"; \
 	      git config user.email "shelter-dev@shelter.dev"; \
-	      git am ../patches/mkosi-v23_1-support-Aliyun-Linux-3.patch && \
+	      git am ../../patches/mkosi-v23_1-support-Aliyun-Linux-3.patch && \
 	      ln -sfn "$$(pwd)/bin/mkosi" "/usr/bin/mkosi"; \
 	else \
 	    true; \
 	fi
+endif
 
 _depend_debian: # Install the build and runtime dependencies on debian-like system
 	@install_pkg() { \
@@ -78,11 +108,10 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	@pip install toml-cli --proxy=$(HTTPS_PROXY)
 
 	@if ! which mkosi; then \
-	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 && \
-	      cd mkosi && git config user.name "shelter-dev"; \
+	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 libexec/mkosi && \
+	      cd libexec/mkosi && git config user.name "shelter-dev"; \
 	      git config user.email "shelter-dev@shelter.dev"; \
-	      git am ../patches/mkosi-v23_1-support-Aliyun-Linux-3.patch && \
-	      ln -sfn "$$(pwd)/bin/mkosi" "/usr/bin/mkosi"; \
+	      git am ../../patches/mkosi-v23_1-support-Aliyun-Linux-3.patch; \
 	else \
 	    true; \
 	fi
@@ -124,6 +153,15 @@ else ifeq ($(IS_DEBIAN), false)
 else
 	@echo "Unknown Linux distribution"; \
 	exit 1
+endif
+
+	@install -d 0755 "$(PREFIX)/libexec/shelter/mkosi" && \
+	  cp -r libexec/mkosi/* "$(PREFIX)/libexec/shelter/mkosi" && \
+	  ln -sfn "$(PREFIX)/libexec/shelter/mkosi/bin/mkosi" "$(PREFIX)/bin/mkosi"
+
+ifeq ($(IS_APSARA), true)
+	@rpm -ivh --force libexec/apsara/busybox-1.35.0-3.el8.x86_64.rpm
+	@pip3 install libexec/apsara/*.whl
 endif
 
 uninstall: # Uninstall the build artifacts
