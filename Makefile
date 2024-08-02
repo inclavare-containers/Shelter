@@ -74,47 +74,34 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	@sudo ln -sfn /etc/os-release /usr/lib/os-release
 
 ifeq ($(IS_APSARA), false)
-	@pip3 install toml-cli --proxy=$(HTTPS_PROXY)
-
-	@if ! which mkosi; then \
-	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 libexec/mkosi && \
-	      cd libexec/mkosi && git config user.name "shelter-dev"; \
-	      git config user.email "shelter-dev@shelter.dev"; \
-	      git am ../../patches/mkosi-v23_1-support-Aliyun-Linux-3.patch && \
-	      ln -sfn "$$(pwd)/bin/mkosi" "/usr/bin/mkosi"; \
-	else \
-	    true; \
-	fi
+	@sudo pip3 install toml-cli --proxy=$(HTTPS_PROXY)
 endif
 
 _depend_debian: # Install the build and runtime dependencies on debian-like system
 	@install_pkg() { \
 	  for p in "$$@"; do \
-	    dpkg -l "$$p" >/dev/null 2>&1 && continue; \
-	    echo "Installing the package \"$$p\" ..."; \
-	    sudo apt-get install -y "$$p"; \
+	    local _p="$$p"; \
+	    [[ "$$p" == +* ]] && _p="$${p:1}"; \
+	    dpkg -l "$$_p" >/dev/null 2>&1 && continue; \
+	    echo "Installing the package \"$$_p\" ..."; \
+	    sudo apt-get install -y "$$_p"; \
 	    if [ $$? -ne 0 ]; then \
-	      echo "Failed to install the package \"$$p\""; \
+	      if [ "$_p" != "$p" ]; then \
+	        echo "Skip installing the absent package \"$$_p\""; \
+	        continue; \
+	      fi; \
+	      echo "Failed to install the package \"$$_p\""; \
 	      exit 1; \
 	    fi; \
 	  done; \
 	}; \
 	sudo apt update && \
 	  install_pkg coreutils git sudo gawk grep python3-socks python3-pip snapd \
-            diffutils rsync libc-bin sed systemd socat \
-            busybox-static kmod bubblewrap qemu-system-x86 zstd \
-            tar openssl
+	  diffutils rsync libc-bin sed systemd socat \
+      busybox-static kmod bubblewrap qemu-system-x86 zstd \
+      tar openssl
 
-	@pip install toml-cli --proxy=$(HTTPS_PROXY)
-
-	@if ! which mkosi; then \
-	    HTTPS_PROXY=$(HTTPS_PROXY) git clone https://github.com/systemd/mkosi.git -b v23.1 libexec/mkosi && \
-	      cd libexec/mkosi && git config user.name "shelter-dev"; \
-	      git config user.email "shelter-dev@shelter.dev"; \
-	      git am ../../patches/mkosi-v23_1-support-Aliyun-Linux-3.patch; \
-	else \
-	    true; \
-	fi
+	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
 	@if ! which docker; then \
 	    sudo apt-get install -y docker.io; \
@@ -139,10 +126,10 @@ clean: # Clean the build artifacts
 install: # Install the build artifacts
 	@[ ! -d "$(CONFIG_DIR)" ] && { \
 	    sudo mkdir -p "$(CONFIG_DIR)"; \
-	} || true; \
-	sudo cp -f 00_logger "$(CONFIG_DIR)"
-	sudo cp -f mkosi.conf mkosi.build mkosi.finalize mkosi.postinst rcS "$(CONFIG_DIR)"
-	sudo cp -a conf "$(CONFIG_DIR)"
+	} || true
+	@sudo cp -f 00_logger "$(CONFIG_DIR)"
+	@sudo cp -f mkosi.conf mkosi.build mkosi.finalize mkosi.postinst rcS "$(CONFIG_DIR)"
+	@sudo cp -a conf "$(CONFIG_DIR)"
 
 	@sudo cp -f shelter "$(PREFIX)/bin"
 
@@ -155,13 +142,13 @@ else
 	exit 1
 endif
 
-	@install -d 0755 "$(PREFIX)/libexec/shelter/mkosi" && \
-	  cp -r libexec/mkosi/* "$(PREFIX)/libexec/shelter/mkosi" && \
-	  ln -sfn "$(PREFIX)/libexec/shelter/mkosi/bin/mkosi" "$(PREFIX)/bin/mkosi"
+	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/mkosi" && \
+	  sudo cp -r libexec/mkosi/* "$(PREFIX)/libexec/shelter/mkosi" && \
+	  sudo ln -sfn "$(PREFIX)/libexec/shelter/mkosi/bin/mkosi" "$(PREFIX)/bin/mkosi"
 
 ifeq ($(IS_APSARA), true)
-	@rpm -ivh --force libexec/apsara/busybox-1.35.0-3.el8.x86_64.rpm
-	@pip3 install libexec/apsara/*.whl
+	@sudo rpm -ivh --force libexec/apsara/busybox-1.35.0-3.el8.x86_64.rpm
+	@sudo pip3 install libexec/apsara/*.whl
 endif
 
 uninstall: # Uninstall the build artifacts
