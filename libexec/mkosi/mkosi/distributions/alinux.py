@@ -22,10 +22,10 @@ class Installer(centos.Installer):
 
     @staticmethod
     def gpgurls(context: Context) -> tuple[str, ...]:
-        if (Path("/") / "etc/yum.repos.d/AliYun.repo").exists():
-            site = "mirrors.cloud.aliyuncs.com"
-        else:
+        if (Path("/") / "etc/yum.repos.d/AlinuxApsara").exists():
             site = "yum.tbsite.net"
+        else:
+            site = "mirrors.cloud.aliyuncs.com"
 
         url = f"http://{site}/alinux/{context.config.release}/RPM-GPG-KEY-ALINUX-{context.config.release}"
 
@@ -38,10 +38,10 @@ class Installer(centos.Installer):
 
     @classmethod
     def repository_variants(cls, context: Context, repo: str) -> list[RpmRepository]:
-        if (Path("/") / "etc/yum.repos.d/AliYun.repo").exists():
-            site = "mirrors.cloud.aliyuncs.com"
-        else:
+        if (Path("/") / "etc/yum.repos.d/AlinuxApsara").exists():
             site = "yum.tbsite.net"
+        else:
+            site = "mirrors.cloud.aliyuncs.com"
 
         url = f"baseurl=http://{site}/alinux/$releasever/{repo.lower()}/$basearch"
         return [RpmRepository(repo, url, cls.gpgurls(context))]

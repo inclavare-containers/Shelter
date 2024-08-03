@@ -1,4 +1,4 @@
-From bf7f4ba67a8f28f45490f007bdd98214ed142897 Mon Sep 17 00:00:00 2001
+From f99eeec25d5153155fa5ce8773d46d66d884f25d Mon Sep 17 00:00:00 2001
 From: Jia Zhang <zhang.jia@linux.alibaba.com>
 Date: Thu, 1 Aug 2024 11:01:09 +0800
 Subject: [PATCH] mkosi: support Aliyun Linux 3
@@ -132,7 +132,7 @@ index 7e04b269..174482b4 100644
  
 diff --git a/mkosi/distributions/alinux.py b/mkosi/distributions/alinux.py
 new file mode 100644
-index 00000000..0e6d968f
+index 00000000..76e7693b
 --- /dev/null
 +++ b/mkosi/distributions/alinux.py
 @@ -0,0 +1,62 @@
@@ -160,10 +160,10 @@ index 00000000..0e6d968f
 +
 +    @staticmethod
 +    def gpgurls(context: Context) -> tuple[str, ...]:
-+        if (Path("/") / "etc/yum.repos.d/AliYun.repo").exists():
-+            site = "mirrors.cloud.aliyuncs.com"
-+        else:
++        if (Path("/") / "etc/yum.repos.d/AlinuxApsara").exists():
 +            site = "yum.tbsite.net"
++        else:
++            site = "mirrors.cloud.aliyuncs.com"
 +
 +        url = f"http://{site}/alinux/{context.config.release}/RPM-GPG-KEY-ALINUX-{context.config.release}"
 +
@@ -176,10 +176,10 @@ index 00000000..0e6d968f
 +
 +    @classmethod
 +    def repository_variants(cls, context: Context, repo: str) -> list[RpmRepository]:
-+        if (Path("/") / "etc/yum.repos.d/AliYun.repo").exists():
-+            site = "mirrors.cloud.aliyuncs.com"
-+        else:
++        if (Path("/") / "etc/yum.repos.d/AlinuxApsara").exists():
 +            site = "yum.tbsite.net"
++        else:
++            site = "mirrors.cloud.aliyuncs.com"
 +
 +        url = f"baseurl=http://{site}/alinux/$releasever/{repo.lower()}/$basearch"
 +        return [RpmRepository(repo, url, cls.gpgurls(context))]
