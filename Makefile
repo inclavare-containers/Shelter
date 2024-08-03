@@ -184,11 +184,15 @@ sync: # Sync up this source code
 	@git submodule update --init
 
 container: # Create the Shelter container image
-	@docker build --network=host \
-	  --build-arg COMMIT=$(COMMIT) --build-arg USER_NAME=$(USER_NAME) \
+ifeq ($(IS_DEBIAN), true)
+	@docker build -f docker/Dockerfile.ubuntu \
+	  --build-arg COMMIT=$(COMMIT) \
+	  --build-arg USER_NAME=$(USER_NAME) \
 	  --build-arg USER_PASSWORD=$(USER_PASSWORD) \
 	  --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
-	  -t shelter:$$(cat VERSION.env) .
+	  --network=host \
+	  -t shelter-ubuntu:$$(cat VERSION.env) .
+endif
 
 version: # Show the version of Shelter
 	@echo -e "\033[1;32mVersion:\033[0m $$(cat VERSION.env)"
