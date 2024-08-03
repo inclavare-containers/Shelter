@@ -27,4 +27,4 @@ binary
 vars.mk
 
 # Ignore the local mkosi clone
-mkosi
+libexec/mkosi
