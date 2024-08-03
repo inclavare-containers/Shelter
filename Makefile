@@ -64,7 +64,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	  done; \
 	}; \
 	sudo true && \
-	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip \
+	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip python3-pysocks which \
 	    diffutils rsync sed systemd socat podman-docker \
 	    +busybox kmod bubblewrap qemu-kvm zstd \
 	    tar openssl
@@ -98,7 +98,7 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	  done; \
 	}; \
 	sudo apt update && \
-	  install_pkg coreutils git sudo gawk grep python3-socks python3-pip snapd \
+	  install_pkg coreutils git sudo gawk grep python3-socks python3-pip which \
 	  diffutils rsync libc-bin sed systemd socat \
       busybox-static kmod bubblewrap qemu-system-x86 zstd \
       tar openssl
