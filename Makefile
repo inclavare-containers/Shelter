@@ -26,17 +26,6 @@ else
 IS_APSARA := false
 endif
 
-ifeq ($(IS_DEBIAN), false)
-IS_APSARA := $(shell \
-    if [ -s "/etc/yum.repos.d/AlinuxApsara.repo" ]; then \
-        echo true; \
-    else \
-        echo false; \
-    fi)
-else
-IS_APSARA := false
-endif
-
 .PHONE: help _depend_redhat _depend_debian _depend prepare build clean install uninstall test all sync container FORCE
 
 FORCE:
