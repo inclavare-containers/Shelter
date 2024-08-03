@@ -37,7 +37,9 @@ else
 IS_APSARA := false
 endif
 
-.PHONE: help _depend_redhat _depend_debian _depend prepare build clean install uninstall test all sync container
+.PHONE: help _depend_redhat _depend_debian _depend prepare build clean install uninstall test all sync container FORCE
+
+FORCE:
 
 help:
 	@grep -E '^[a-zA-Z][a-zA-Z0-9_-]+:.*?# .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?# "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -183,7 +185,7 @@ sync: # Sync up this source code
 	@git pull --recurse
 	@git submodule update --init
 
-container: # Create the Shelter container image
+container: FORCE # Create the Shelter container image
 ifeq ($(IS_DEBIAN), true)
 	@docker build -f docker/Dockerfile.ubuntu \
 	  --build-arg COMMIT=$(COMMIT) \
