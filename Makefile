@@ -1,8 +1,8 @@
-include vars.mk
-
 PREFIX ?= /usr/local
 CONFIG_DIR ?= /etc/shelter.d
 CONFIG ?= /etc/shelter.conf
+
+include vars.mk
 
 SHELL := /bin/bash
 
@@ -26,7 +26,8 @@ else
 IS_APSARA := false
 endif
 
-.PHONE: help _depend_redhat _depend_debian _depend prepare build clean install uninstall test all sync container FORCE
+.PHONE: help _depend_redhat _depend_debian _depend prepare build clean \
+    install uninstall test all sync _build_container container FORCE
 
 FORCE:
 
