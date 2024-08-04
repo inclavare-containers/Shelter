@@ -116,19 +116,25 @@ build: # Build the necessary components (network access not required)
 clean: # Clean the build artifacts
 
 install: # Install the build artifacts
-	@[ ! -d "$(CONFIG_DIR)" ] && { \
-	    sudo mkdir -p "$(CONFIG_DIR)"; \
-	} || true
-	@sudo cp -f 00_logger "$(CONFIG_DIR)"
-	@sudo cp -f mkosi.conf mkosi.build mkosi.finalize mkosi.postinst rcS "$(CONFIG_DIR)"
-	@sudo cp -a conf "$(CONFIG_DIR)"
+	@sudo install -D -d 0755 "$(CONFIG_DIR)" && { \
+	    sudo install -m 0644 00_logger "$(CONFIG_DIR)"; \
+	    sudo install -m 0644 mkosi.conf "$(CONFIG_DIR)"; \
+		sudo install -m 0755 \
+		  mkosi.build mkosi.finalize mkosi.postinst rcS \
+		  "$(CONFIG_DIR)"; \
+	    sudo install -D -d 0755 "$(CONFIG_DIR)/conf" && { \
+		    sudo install -m 0755 "conf/power" "$(CONFIG_DIR)/conf"; \
+		    sudo install -m 0644 "conf/acpid.conf" "$(CONFIG_DIR)/conf"; \
+		    sudo install -m 0644 "conf/blacklist.conf" "$(CONFIG_DIR)/conf"; \
+		}; \
+	}
 
-	@sudo cp -f shelter "$(PREFIX)/bin"
+	@sudo install -D -m 0755 shelter "$(PREFIX)/bin"
 
 ifeq ($(IS_DEBIAN), true)
-	@sudo cp -f shelter.debian.conf "$(CONFIG)"
+	@sudo install -m 0755 shelter.debian.conf "$(CONFIG)"
 else ifeq ($(IS_DEBIAN), false)
-	@sudo cp -f shelter.redhat.conf "$(CONFIG)"
+	@sudo install -m 0755 shelter.redhat.conf "$(CONFIG)"
 else
 	@echo "Unknown Linux distribution"; \
 	exit 1
