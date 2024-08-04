@@ -87,14 +87,14 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	  done; \
 	}; \
 	sudo apt update && \
-	  install_pkg coreutils git sudo gawk grep python3-socks python3-pip which \
+	  install_pkg apt-utils coreutils git sudo gawk grep python3-socks python3-pip \
 	  diffutils rsync libc-bin sed systemd socat \
       busybox-static kmod bubblewrap qemu-system-x86 zstd \
       tar openssl
 
 	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
-	@if ! which docker; then \
+	@if ! which docker >/dev/null 2>&1; then \
 	    sudo apt-get install -y docker.io; \
 	fi
 
