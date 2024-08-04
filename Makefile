@@ -40,9 +40,10 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	  for p in "$$@"; do \
 	    local _p="$$p"; \
 	    [[ "$$p" == +* ]] && _p="$${p:1}"; \
-	    rpm -qi "$$_p" >/dev/null 2>&1 && continue; \
+	    rpm -q "$$_p" >/dev/null 2>&1 && \
+	      yum check-update "$$_p" >/dev/null 2>&1 && continue; \
 	    echo "Installing the package \"$$_p\" ..."; \
-	    sudo yum install -y "$$_p"; \
+	    sudo yum install --best -y "$$_p"; \
 	    if [ $$? -ne 0 ]; then \
 	      if [ "$_p" != "$p" ]; then \
 	        echo "Skip installing the absent package \"$$_p\""; \
@@ -56,7 +57,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	sudo true && \
 	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip python3-pysocks which \
 	    diffutils rsync sed systemd socat podman-docker \
-	    +busybox kmod bubblewrap qemu-kvm qemu-kvm-core zstd \
+	    +busybox kmod bubblewrap qemu-kvm zstd \
 	    tar openssl
 
 	# Work around the python 3.6 lower than the requirement from mkosi
