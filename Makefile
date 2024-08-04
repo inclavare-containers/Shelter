@@ -181,7 +181,7 @@ sync: # Sync up this source code
 	@git pull --recurse
 	@git submodule update --init
 
-container: FORCE # Create the Shelter container image
+_build_container: FORCE # Create the Shelter container image
 ifeq ($(IS_DEBIAN), true)
 	@docker build -f docker/Dockerfile.ubuntu \
 	  --build-arg COMMIT=$(COMMIT) \
@@ -190,6 +190,25 @@ ifeq ($(IS_DEBIAN), true)
 	  --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
 	  --network=host \
 	  -t shelter-ubuntu:$$(cat VERSION.env) .
+else
+	@docker build -f docker/Dockerfile.alinux \
+	  --build-arg COMMIT=$(COMMIT) \
+	  --build-arg USER_NAME=$(USER_NAME) \
+	  --build-arg USER_PASSWORD=$(USER_PASSWORD) \
+	  --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
+	  --network=host \
+	  -t shelter-alinux:$$(cat VERSION.env) .
+endif
+
+container: _build_container # Run the Shelter container image
+ifeq ($(IS_DEBIAN), true)
+	@docker run --name shelter-ubuntu-$$(cat VERSION.env) \
+	  --rm --privileged -v tmp:/var/tmp -it --network=host \
+	  shelter-ubuntu:$$(cat VERSION.env) bash
+else
+	@docker run --name shelter-alinux-$$(cat VERSION.env) \
+	  --rm --privileged -v tmp:/var/tmp -it --network=host \
+	  localhost/shelter-alinux:$$(cat VERSION.env) bash
 endif
 
 version: # Show the version of Shelter

@@ -1,0 +1,71 @@
+# The Dockerfile for Shelter Makefile
+
+FROM registry.cn-hangzhou.aliyuncs.com/alinux/alinux3:latest as builder
+
+# The build arguments with docker build --build-arg NAME=VALUE
+
+# Define the default commit of source code
+ARG COMMIT=HEAD
+ARG USER_NAME
+ARG USER_PASSWORD
+# Define the https proxy
+ARG HTTPS_PROXY
+
+ENV HTTPS_PROXY=${HTTPS_PROXY}
+
+WORKDIR /usr/src
+
+# Install the build dependencies
+RUN yum install -y git make sudo
+
+RUN git clone \
+      https://${USER_NAME}:${USER_PASSWORD}@github.com/inclavare-containers/Shelter.git && \
+    cd Shelter && git checkout ${COMMIT} && make build && make install
+
+
+# The Dockerfile for shelter tool
+
+FROM registry.cn-hangzhou.aliyuncs.com/alinux/alinux3:latest
+
+# Define the source of this Shelter image
+LABEL org.opencontainers.image.source="https://github.com/inclavare-containers/Shelter"
+
+# Define the https proxy
+ARG HTTPS_PROXY
+
+ENV HTTPS_PROXY=${HTTPS_PROXY}
+
+WORKDIR /
+
+RUN yum install -y python3.11 python3-pip python3-pysocks which
+
+# Install the runtime dependencies for shelter
+RUN yum install -y diffutils rsync systemd socat \
+      busybox kmod bubblewrap qemu-kvm zstd \
+      kernel-core
+
+# Install toml-cli
+RUN pip3 install toml-cli --proxy=${HTTPS_PROXY}
+
+# Install the runtime dependencies for verify-signature demo
+RUN yum install -y openssl
+
+# Install the useful tools
+RUN yum install -y dracut tree
+
+# Work around the python 3.6 lower than the requirement from mkosi
+RUN ln -sfn `which python3.11` `which python3`
+
+# Work around mkosi for /usr/lib/os-release. See 1149444ef for the details
+RUN ln -sfn /etc/os-release /usr/lib/os-release
+
+# Install the shelter tool
+COPY --from=builder /etc/shelter.d/ /etc/shelter.d/
+COPY --from=builder /usr/local/bin/shelter /usr/local/bin/shelter
+COPY --from=builder /etc/shelter.conf /etc/shelter.conf
+COPY --from=builder /usr/local/libexec/shelter/mkosi /usr/local/libexec/shelter/mkosi
+RUN ln -sfn /usr/local/libexec/shelter/mkosi/bin/mkosi /usr/local/bin/mkosi
+
+ENV HTTPS_PROXY=""
+
+CMD [ "shelter" ]
