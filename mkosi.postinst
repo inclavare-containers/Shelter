@@ -23,6 +23,7 @@ BUSYBOX="$BUILDROOT/usr/bin/busybox"
 
 ln -srf "$BUSYBOX" "$BUILDROOT/init"
 ln -srf "$BUSYBOX" "$BUILDROOT/bin/sh"
+ln -srf "$BUSYBOX" "$BUILDROOT/usr/bin/true"
 
 for link_name in {lsmod,rmmod,insmod,modinfo,modprobe,depmod}; do
     ln -srf $BUILDROOT/usr/bin/kmod $BUILDROOT/usr/bin/$link_name
