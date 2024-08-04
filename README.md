@@ -40,14 +40,9 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
     shelter build
     ~~~
 
-5. 执行shelter测试
+5. 直接运行shelter镜像中的指定命令（相当于start、exec、stop的组合）
     ~~~sh
-    shelter run lscpu
-    ~~~
-
-6. 直接运行shelter镜像中的指定命令（相当于start、exec、stop的组合）
-    ~~~sh
-    shelter run lscpu
+    shelter run cat /proc/cmdline
     ~~~
 
     也可以分步执行：
@@ -58,7 +53,7 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
 
     - 在创建的shelter实例中运行镜像中的指定命令
       ~~~sh
-      shelter exec lscpu
+      shelter exec cat /proc/cmdline
       ~~~
 
     - 停止shelter实例
@@ -66,11 +61,11 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
       shelter stop
       ~~~
 
-### 构建Shelter容器镜像
+### 构建和运行Shelter容器镜像
 
 首先需要编辑vars.mk，将个人的github登录名和密码配置到USER_NAME和USER_PASSWORD变量中；必要的话可以将网络代理服务器的地址配置到HTTPS_PROXY变量中。
 
-然后执行以下命令构建出Shelter容器镜像：
+然后执行以下命令构建并运行Shelter容器镜像：
 ```shell
 make container
 ```
