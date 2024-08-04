@@ -7,7 +7,7 @@ SHELTER_CONF_DIR="/etc/shelter.d"
 SHELTER_DEFAULT_STAGE="default"
 SHELTER_STAGE_DIR="/var/run/shelter/${SHELTER_DEFAULT_STAGE}"
 SHELTER_IMAGE="${SHELTER_STAGE_DIR}/image"
-SHELTER_KERNEL="${SHELTER_STAGE_DIR}/kernel"
+SHELTER_KERNEL="${SHELTER_STAGE_DIR}/image.vmlinuz"
 
 EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
 CONF="${SHELTER_STAGE_DIR}/build.conf"
@@ -300,7 +300,6 @@ build() {
     local kernel_version="$(uname -r)"
     mkosi -f --debug -C "${SHELTER_CONF_DIR}" \
       --build-script="${SHELTER_CONF_DIR}/mkosi.build" \
-      --finalize-script="${SHELTER_CONF_DIR}/mkosi.finalize" \
       --postinst-script="${SHELTER_CONF_DIR}/mkosi.postinst" \
       --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_IMAGE})" \
       --extra-tree="${EXTRA_DIR}:/extra" \
@@ -310,16 +309,6 @@ build() {
         error "Error: failed to build initrd image with mkosi"
         exit 1
     fi
-
-    debug "Copying kernel: ${SHELTER_KERNEL}"
-
-    if [ -s "/boot/vmlinuz-${kernel_version}" ]; then
-        cp -f "/boot/vmlinuz-${kernel_version}" "${SHELTER_KERNEL}"
-        return 0
-    fi
-
-    error "Error: can't find the currently active kernel from /boot/"
-    exit 1
 }
 
 get_conf() {

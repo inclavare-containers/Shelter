@@ -121,7 +121,7 @@ install: # Install the build artifacts
 	    sudo install -m 0644 00_logger "$(CONFIG_DIR)"; \
 	    sudo install -m 0644 mkosi.conf "$(CONFIG_DIR)"; \
 		sudo install -m 0755 \
-		  mkosi.build mkosi.finalize mkosi.postinst rcS \
+		  mkosi.build mkosi.postinst rcS \
 		  "$(CONFIG_DIR)"; \
 	    sudo install -D -d 0755 "$(CONFIG_DIR)/conf" && { \
 		    sudo install -m 0755 "conf/power" "$(CONFIG_DIR)/conf"; \
