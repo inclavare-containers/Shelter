@@ -56,7 +56,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	sudo true && \
 	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip python3-pysocks which \
 	    diffutils rsync sed systemd socat podman-docker \
-	    +busybox kmod bubblewrap qemu-kvm zstd \
+	    +busybox kmod bubblewrap qemu-kvm qemu-kvm-core zstd \
 	    tar openssl
 
 	# Work around the python 3.6 lower than the requirement from mkosi
