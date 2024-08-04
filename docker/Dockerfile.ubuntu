@@ -18,7 +18,7 @@ WORKDIR /usr/src
 
 # Install the build dependencies
 RUN apt-get update && \
-    apt-get install -y git sudo gawk grep python3-socks python3-pip snapd
+    apt-get install -y apt-utils git make sudo gawk grep python3-socks python3-pip
 
 RUN git clone \
       https://${USER_NAME}:${USER_PASSWORD}@github.com/inclavare-containers/Shelter.git && \
@@ -38,21 +38,18 @@ ARG HTTPS_PROXY
 ENV DEBIAN_FRONTEND=noninteractive
 ENV HTTPS_PROXY=${HTTPS_PROXY}
 
-WORKDIR /usr/src
+WORKDIR /
 
-RUN apt-get update && apt-get install -y python3-socks python3-pip git
+RUN apt-get update && apt-get install -y apt-utils python3-pip python3-socks
 
 # Install the runtime dependencies for shelter
 RUN apt-get install -y \
       coreutils gawk diffutils rsync libc-bin grep sed systemd socat \
-      busybox-static kmod bubblewrap qemu-system-x86
+      busybox-static kmod bubblewrap qemu-system-x86 zstd \
+      linux-modules-$(uname -r)
 
 # Install toml-cli
-RUN pip install toml-cli
-
-# Install mkosi
-RUN git clone https://github.com/systemd/mkosi.git -b v23.1 && \
-    ln -s /usr/src/mkosi/bin/mkosi /usr/bin/mkosi
+RUN pip install toml-cli --proxy=${HTTPS_PROXY}
 
 # Install the runtime dependencies for verify-signature demo
 RUN apt-get install -y tar openssl
@@ -64,5 +61,9 @@ RUN apt-get install -y dracut-core tree
 COPY --from=builder /etc/shelter.d/ /etc/shelter.d/
 COPY --from=builder /usr/local/bin/shelter /usr/local/bin/shelter
 COPY --from=builder /etc/shelter.conf /etc/shelter.conf
+COPY --from=builder /usr/local/libexec/shelter/mkosi /usr/local/libexec/shelter/mkosi
+RUN ln -sfn /usr/local/libexec/shelter/mkosi/bin/mkosi /usr/local/bin/mkosi
+
+ENV HTTPS_PROXY=""
 
 CMD [ "shelter" ]
