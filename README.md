@@ -17,15 +17,15 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
   make sync
   ```
 
-1. 安装编译时和运行时依赖
+1. 编译和安装
     ~~~sh
-    make prepare
+    make all
     ~~~
 
-2. 安装shelter和相关依赖
-    ~~~sh
-    make install
-    ~~~
+2. 运行测试
+    ```shell
+    make test
+    ```
 
 3. 配置./build.conf文件
     该sh文件中包含了要被拷贝到guest系统的程序/文件。
