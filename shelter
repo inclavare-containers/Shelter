@@ -364,7 +364,9 @@ start() {
             cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}" "${opts}")"
         fi
 
+        debug "qemu command: $cmd"
         eval cmd=("$cmd")
+
         systemd-run --user --description=Shelter --unit=shelter.service -p StandardInput=null -G "${cmd[@]}"
 
         debug "The guest is started at CID ${cid}"
@@ -379,7 +381,7 @@ is-active() {
 }
 
 run() {
-    start 1>&- 2>&-
+    start
 
     debug "The guest is booting"
 
