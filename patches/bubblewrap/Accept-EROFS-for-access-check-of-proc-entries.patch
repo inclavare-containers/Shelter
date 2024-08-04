@@ -1,0 +1,28 @@
+From 4c35d7a5f92499d6ed646d4a5ffad9acc10cb432 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?J=C3=BCrg=20Billeter?= <j@bitron.ch>
+Date: Tue, 18 Aug 2020 17:33:49 +0200
+Subject: [PATCH] Accept EROFS for access() check of /proc entries
+
+This is required to work in a Docker container.
+
+Signed-off-by: Jia Zhang <zhang.jia@linux.alibaba.com>
+---
+ bubblewrap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/bubblewrap.c b/bubblewrap.c
+index e1a4629..d65ffef 100644
+--- a/bubblewrap.c
++++ b/bubblewrap.c
+@@ -1148,7 +1148,7 @@ setup_newroot (bool unshare_pid,
+               if (access (subdir, W_OK) < 0)
+                 {
+                   /* The file is already read-only or doesn't exist.  */
+-                  if (errno == EACCES || errno == ENOENT)
++                  if (errno == EACCES || errno == ENOENT || errno == EROFS)
+                     continue;
+ 
+                   die_with_error ("Can't access %s", subdir);
+-- 
+2.41.0
+
