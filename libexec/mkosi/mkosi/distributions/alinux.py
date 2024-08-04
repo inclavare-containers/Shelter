@@ -22,7 +22,7 @@ class Installer(centos.Installer):
 
     @staticmethod
     def gpgurls(context: Context) -> tuple[str, ...]:
-        if (Path("/") / "etc/yum.repos.d/AlinuxApsara").exists():
+        if (Path("/") / "etc/yum.repos.d/AlinuxApsara.repo").exists():
             site = "yum.tbsite.net"
         else:
             site = "mirrors.cloud.aliyuncs.com"
@@ -38,7 +38,7 @@ class Installer(centos.Installer):
 
     @classmethod
     def repository_variants(cls, context: Context, repo: str) -> list[RpmRepository]:
-        if (Path("/") / "etc/yum.repos.d/AlinuxApsara").exists():
+        if (Path("/") / "etc/yum.repos.d/AlinuxApsara.repo").exists():
             site = "yum.tbsite.net"
         else:
             site = "mirrors.cloud.aliyuncs.com"
