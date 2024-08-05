@@ -6,8 +6,6 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
 
 本节介绍在各种主机上编译、安装和运行shelter的步骤。
 
-### Ubuntu 22.04
-
 0. 下载本仓库：
   ```shell
   https://github.com/inclavare-containers/Shelter.git -b 0.0.6
@@ -28,19 +26,17 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
     ```
 
 3. 配置./build.conf文件
-    该sh文件中包含了要被拷贝到guest系统的程序/文件。
+    该文件定义了需要被拷贝到guest系统的程序/文件列表。
     - `binary=()`：指定要拷贝的可执行文件列表，程序依赖的动态库也会自动被拷贝到initrd中
     - `file=()`：指定要拷贝的普通文件列表
-    具体的配置说明请查看[./build.conf](./build.conf)文件中的注释
-    
-    在当前的实现中，用户可以按照以上格式增加新路径以实现将程序/文件拷贝到initrd中。
+    具体的配置说明请查看[./build.conf](./build.conf)文件中的注释；可参考verify-signature demo中的[build.conf](demos/verify-signature/build.conf)。
 
 4. 构建shelter镜像
     ~~~sh
     shelter build
     ~~~
 
-5. 直接运行shelter镜像中的指定命令（相当于start、exec、stop的组合）
+5. 直接运行shelter镜像中的指定命令
     ~~~sh
     shelter run cat /proc/cmdline
     ~~~
@@ -61,7 +57,7 @@ Shelter是一个轻松方便在VM中运行应用的启动器。
       shelter stop
       ~~~
 
-### 构建和运行Shelter容器镜像
+## 构建和运行Shelter容器镜像
 
 首先需要编辑vars.mk，将个人的github登录名和密码配置到USER_NAME和USER_PASSWORD变量中；必要的话可以将网络代理服务器的地址配置到HTTPS_PROXY变量中。
 
