@@ -91,8 +91,8 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	sudo apt update && \
 	  install_pkg apt-utils coreutils git sudo gawk grep python3-socks python3-pip \
 	  diffutils rsync libc-bin sed systemd socat \
-      busybox-static kmod bubblewrap qemu-system-x86 zstd \
-      tar openssl
+	  busybox-static kmod bubblewrap qemu-system-x86 zstd \
+	  tar openssl
 
 	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
