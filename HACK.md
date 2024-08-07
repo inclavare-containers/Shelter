@@ -1,6 +1,6 @@
-# Apsara上遇到的问题
+# shelter build错误
 
-## Shelter build错误：PermissionError: [Errno 13] Permission denied: '/var/cache/dnf/metadata_lock.pid'
+## PermissionError: [Errno 13] Permission denied: '/var/cache/dnf/metadata_lock.pid'
 
 错误现象为：
 
@@ -41,3 +41,15 @@ Cleaning up.
 ```
 
 解决方法：先执行`sudo su -`成为login root，再执行`shelter build`。
+
+# shelter run错误
+
+## Failed to start transient service unit
+
+错误现象为：
+
+```
+Failed to start transient service unit: Unit shelter.service was already loaded or has a fragment file.
+```
+
+解决方法：执行`systemctl --user stop shelter.service`，然后再重新运行`shelter run`。
