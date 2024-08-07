@@ -1,12 +1,13 @@
 # 支持海光CSV
 
-## 配置和运行shelter
+## 通过shelter运行CSV guest
+
 
 ```shell
 vi /etc/shelter.conf
 ```
 
-在`opts`行中进行如下配置：
+确保在`opts`行中进行了如下配置：
 
 ```shell
 opts = "-drive if=pflash,format=raw,unit=0,file=/usr/share/edk2/ovmf/OVMF_CODE.cc.fd,readonly=on -object sev-guest,id=sev0,policy=0x1,cbitpos=47,reduced-phys-bits=5 -machine q35,memory-encryption=sev0"
@@ -44,14 +45,11 @@ address sizes   : 48 bits physical, 48 bits virtual
 power management:
 ```
 
-## 验证
+## 验证CSV guest运行情况
 
-下载和安装HAG工具，并使用该工具查询当前系统上正在运行的CSV guest的个数：
+使用`hag`工具查询当前系统上正在运行的CSV guest个数：
 
 ```shell
-git clone https://gitee.com/anolis/hygon-devkit.git
-sudo cp hygon-devkit/bin/hag /usr/local/sbin
-sudo chmod +x /usr/local/sbin/hag
 hag csv platform_status
 ```
 

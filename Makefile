@@ -55,7 +55,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	  done; \
 	}; \
 	sudo true && \
-	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip python3-pysocks which \
+	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip python3-pysocks which util-linux \
 	    diffutils rsync sed systemd socat podman-docker \
 	    +busybox kmod bubblewrap qemu-kvm zstd \
 	    tar openssl
@@ -89,7 +89,7 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	  done; \
 	}; \
 	sudo apt update && \
-	  install_pkg apt-utils coreutils git sudo gawk grep python3-socks python3-pip \
+	  install_pkg apt-utils coreutils git sudo gawk grep python3-socks python3-pip util-linux \
 	  diffutils rsync libc-bin sed systemd socat \
 	  busybox-static kmod bubblewrap qemu-system-x86 zstd \
 	  tar openssl
@@ -146,9 +146,15 @@ endif
 	  sudo ln -sfn "$(PREFIX)/libexec/shelter/mkosi/bin/mkosi" "$(PREFIX)/bin/mkosi"
 
 ifeq ($(IS_APSARA), true)
-	@sudo rpm -ivh libexec/apsara/busybox-1.35.0-3.el8.x86_64.rpm
+	@sudo rpm -ivh libexec/apsara/busybox-1.35.0-3.el8.x86_64.rpm || true
 	@sudo pip3 install libexec/apsara/*.whl
 endif
+
+	# FIXIME: assume hygon platforms only support redhat-like system
+	@if lscpu | grep -q -o 'HygonGenuine'; then \
+	    sudo install -m 0755 libexec/hygon/hag /usr/local/sbin/hag; \
+	    sudo install -m 0755 shelter.hygon.conf "$(CONFIG)"; \
+	fi
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
@@ -157,6 +163,8 @@ uninstall: # Uninstall the build artifacts
 
 	@sudo rm -rf "$(CONFIG_DIR)"
 	@sudo rm -f "$(CONFIG)"
+
+	@sudo rm -f /usr/local/sbin/hag
 
 test: # Run verify-signature demo with shelter
 	@./demos/verify-signature/gen-keypair.sh && \
