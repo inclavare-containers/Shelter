@@ -15,6 +15,8 @@ CONF="${SHELTER_STAGE_DIR}/build.conf"
 ESSENTIAL_BINARIES=("socat" "busybox" "kmod")
 ESSENTIAL_FILES=()
 
+SHELTER_TIMEOUT=60
+
 # Function: Display help information
 show_help() {
     cat <<EOF
@@ -398,7 +400,7 @@ run() {
 
     debug "The guest is booting"
 
-    local wait_seconds=20
+    local wait_seconds=${SHELTER_TIMEOUT}
     debug "Now waiting ${wait_seconds} seconds for the guest to launch ..."
 
     local cid="$(get_stage cid)"
@@ -455,7 +457,7 @@ stop() {
     debug "Send poweroff event to the guest"
     echo "/usr/bin/poweroff" | socat - vsock-connect:${cid}:4321
 
-    local wait_seconds=20
+    local wait_seconds=${SHELTER_TIMEOUT}
     debug "Now waiting ${wait_seconds} seconds for the guest to exit ..."
 
     for ((i=${wait_seconds}; i>0; i--))
