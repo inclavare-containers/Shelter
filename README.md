@@ -1,6 +1,10 @@
 # Shelter
 
-Shelter是一个轻松方便在VM中运行应用的启动器。
+Shelter是一个将应用沙箱化的启动器。
+
+## 平台支持情况
+
+- [海光CSV](docs/HYGON.md)
 
 ## 开发者使用步骤
 
