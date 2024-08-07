@@ -354,6 +354,14 @@ EOF
 }
 
 start() {
+    local max_user_ns="$(sysctl --binary --quiet user.max_user_namespaces)"
+
+    # Work around the default zero max_user_namespaces value on apasa
+    if [ "${max_user_ns}" == "0" ]; then
+        warn "Set user.max_user_namespaces to be 766996 forcibly."
+        sysctl --write user.max_user_namespaces=766996
+    fi
+
     if [[ -s "${SHELTER_IMAGE}" && -s "${SHELTER_KERNEL}" ]]; then
         local cid=$(randomize)
         store_stage "cid" "${cid}"

@@ -1,19 +1,5 @@
 # Apsara上遇到的问题
 
-## nesting depth or /proc/sys/user/max_*_namespaces exceeded (ENOSPC)
-
-错误现象为：
-
-```
-‣ Including configuration file /etc/shelter.d/mkosi.conf
-‣ + stat --file-system --format %T /var/tmp/mkosi-workspace-qjqzqck8
-bwrap: Creating new namespace failed: nesting depth or /proc/sys/user/max_*_namespaces exceeded (ENOSPC)
-‣ "bwrap --unshare-net --die-with-parent --proc /proc --setenv SYSTEMD_OFFLINE 0 --unsetenv TMPDIR --tmpfs /tmp --unshare-ipc --dev /dev --symlink usr/bin /bin --symlink usr/sbin /sbin --symlink usr/lib /lib --symlink usr/lib64 /lib64 --setenv PATH /scripts:/home/shuguang-176E/.local/bin:/home/shuguang-176E/bin:/usr/ali/bin/:/usr/ali/sbin/:/sbin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/X11R6/bin:/opt/satools --ro-bind /etc/alternatives /etc/alternatives --ro-bind /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /proxy.cacert --ro-bind /usr /usr --bind /var/tmp/mkosi-workspace-qjqzqck8/tmp/mkosi-var-tmp-8becba40d7a34d04 /var/tmp --ro-bind /var/tmp/mkosi-workspace-qjqzqck8 /var/tmp/mkosi-workspace-qjqzqck8 --symlink ../proc/self/mounts /etc/mtab sh -c 'chmod 1777 /dev/shm && chmod 755 /etc && exec $0 "$@"' stat --file-system --format %T /var/tmp/mkosi-workspace-qjqzqck8" returned non-zero exit code 1.
-‣ + rm -rf -- /var/tmp/mkosi-workspace-qjqzqck8
-```
-
-解决方法：`sysctl -w user.max_user_namespaces=65535`
-
 ## Shelter build错误：PermissionError: [Errno 13] Permission denied: '/var/cache/dnf/metadata_lock.pid'
 
 错误现象为：
