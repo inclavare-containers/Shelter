@@ -12,7 +12,7 @@ Shelter是一个将应用沙箱化的启动器。
 
 0. 下载本仓库：
   ```shell
-  https://github.com/inclavare-containers/Shelter.git -b 0.0.6
+  git clone https://github.com/inclavare-containers/Shelter.git -b 0.0.7
   ```
   或更新本仓库至最新版本:
   ```shell
