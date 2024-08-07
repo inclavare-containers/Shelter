@@ -146,7 +146,7 @@ endif
 	  sudo ln -sfn "$(PREFIX)/libexec/shelter/mkosi/bin/mkosi" "$(PREFIX)/bin/mkosi"
 
 ifeq ($(IS_APSARA), true)
-	@sudo rpm -ivh --force libexec/apsara/busybox-1.35.0-3.el8.x86_64.rpm
+	@sudo rpm -ivh libexec/apsara/busybox-1.35.0-3.el8.x86_64.rpm
 	@sudo pip3 install libexec/apsara/*.whl
 endif
 
