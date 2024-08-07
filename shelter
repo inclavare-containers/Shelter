@@ -344,7 +344,7 @@ config_qemu() {
     kern_cmd="${kern_cmd} console=ttyS0"
 
     local opts="$(cat <<EOF
--accel kvm -m ${mem} -nographic
+-accel kvm -m ${mem} -nographic -cpu host
 -kernel '${SHELTER_KERNEL}' -initrd '${SHELTER_IMAGE}'
 -append '${kern_cmd}'
 -device vhost-vsock-pci,guest-cid=${cid}
