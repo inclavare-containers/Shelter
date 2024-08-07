@@ -14,7 +14,7 @@ bwrap: Creating new namespace failed: nesting depth or /proc/sys/user/max_*_name
 
 解决方法：`sysctl -w user.max_user_namespaces=65535`
 
-## PermissionError: [Errno 13] Permission denied: '/var/cache/dnf/metadata_lock.pid'
+## Shelter build错误：PermissionError: [Errno 13] Permission denied: '/var/cache/dnf/metadata_lock.pid'
 
 错误现象为：
 
@@ -54,4 +54,4 @@ Cleaning up.
 ‣ "bwrap --die-with-parent --proc /proc --setenv SYSTEMD_OFFLINE 1 --unsetenv TMPDIR --tmpfs /tmp --unshare-ipc --dev /dev --symlink usr/bin /bin --symlink usr/sbin /sbin --symlink usr/lib /lib --symlink usr/lib64 /lib64 --setenv PATH /scripts:/home/shuguang-176E/.local/bin:/home/shuguang-176E/bin:/usr/ali/bin/:/usr/ali/sbin/:/sbin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/X11R6/bin:/opt/satools --uid 0 --gid 0 --cap-add ALL --dir /work/src --chdir /work/src --bind /var/tmp/mkosi-workspace-wfp_kbzo/root /buildroot --bind /var/tmp/mkosi-workspace-wfp_kbzo/pkgmngr/etc /etc --ro-bind /etc/alternatives /etc/alternatives --ro-bind /etc/pki /etc/pki --bind/etc/resolv.conf /etc/resolv.conf --ro-bind /etc/ssl /etc/ssl --ro-bind /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /proxy.cacert --ro-bind /usr /usr --bind '/var/cache/mkosi/alinux~3~x86-64/cache/dnf' /var/cache/dnf --bind '/var/cache/mkosi/alinux~3~x86-64/lib/dnf' /var/lib/dnf --bind /var/tmp/mkosi-workspace-wfp_kbzo/pkgmngr/var/log /var/log --bind /var/tmp/mkosi-workspace-wfp_kbzo/tmp/mkosi-var-tmp-4796d6a3b3904764 /var/tmp --bind /var/tmp/mkosi-workspace-wfp_kbzo/packages /work/packages --bind /etc/shelter.d /work/src sh -c 'chmod 1777 /dev/shm && chmod 755 /etc && exec $0 "$@"' dnf --assumeyes --best --releasever=3 --installroot=/buildroot --setopt=keepcache=1 --setopt=logdir=/var/log --setopt=cachedir=/var/cache/dnf --setopt=persistdir=/var/lib/dnf --setopt=install_weak_deps=0 --setopt=check_config_file_age=0 '--disableplugin=*' --enableplugin builddep --enableplugin versionlock --setopt=debuglevel=10 --nodocs --config=/etc/dnf/dnf.conf --setopt=reposdir=/etc/yum.repos.d --setopt=varsdir=/etc/dnf/vars --setopt=proxy_sslcacert=/proxy.cacert makecache" returned non-zero exit code 1.
 ```
 
-解决方法：`sudo su -`
+解决方法：先执行`sudo su -`成为login root，再执行`shelter build`。
