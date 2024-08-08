@@ -128,6 +128,14 @@ install: # Install the build artifacts
 		    sudo install -m 0644 "conf/acpid.conf" "$(CONFIG_DIR)/conf"; \
 		    sudo install -m 0644 "conf/blacklist.conf" "$(CONFIG_DIR)/conf"; \
 		}; \
+		sudo install -D -d 0755 "$(CONFIG_DIR)/mkosi.repart" && { \
+			sudo install -m 0644 "mkosi.repart/10-root.conf" "$(CONFIG_DIR)/mkosi.repart"; \
+		}; \
+		sudo install -D -d 0755 "$(CONFIG_DIR)/initrd" && { \
+			sudo install -m 0755 "initrd/init" "$(CONFIG_DIR)/initrd"; \
+			sudo install -m 0644 "initrd/mkosi.conf" "$(CONFIG_DIR)/initrd"; \
+			sudo install -m 0755 "initrd/mkosi.postinst" "$(CONFIG_DIR)/initrd"; \
+		}; \
 	}
 
 	@sudo install -D -m 0755 shelter "$(PREFIX)/bin"
