@@ -1,0 +1,10 @@
+rsync -v --checksum --links --info=skip2 --recursive \
+--keep-dirlinks $BUILDROOT/extra/* $BUILDROOT/
+
+cp -f ./init $BUILDROOT/init
+
+ln -srf $BUILDROOT/usr/bin/busybox $BUILDROOT/bin/sh
+
+for link_name in {lsmod,rmmod,insmod,modinfo,modprobe,depmod}; do
+    ln -srf $BUILDROOT/usr/bin/kmod $BUILDROOT/usr/bin/$link_name
+done

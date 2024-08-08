@@ -4,15 +4,18 @@
 
 SHELTER_CONF="/etc/shelter.conf"
 SHELTER_CONF_DIR="/etc/shelter.d"
+SHELTER_INITRD_CONF_DIR="${SHELTER_CONF_DIR}/initrd"
 SHELTER_DEFAULT_STAGE="default"
 SHELTER_STAGE_DIR="/var/run/shelter/${SHELTER_DEFAULT_STAGE}"
-SHELTER_IMAGE="${SHELTER_STAGE_DIR}/image"
-SHELTER_KERNEL="${SHELTER_STAGE_DIR}/image.vmlinuz"
+SHELTER_INITRD="${SHELTER_STAGE_DIR}/initrd"
+SHELTER_KERNEL="${SHELTER_INITRD}.vmlinuz"
+SHELTER_PHRASE="${SHELTER_STAGE_DIR}/phrase"
+SHELTER_DISK="${SHELTER_STAGE_DIR}/disk"
 
 EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
 CONF="${SHELTER_STAGE_DIR}/build.conf"
 
-ESSENTIAL_BINARIES=("socat" "busybox" "kmod")
+ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup")
 ESSENTIAL_FILES=()
 
 SHELTER_TIMEOUT=60
@@ -47,6 +50,11 @@ randomize() {
     fi
 
     done
+}
+
+create_phrase() {
+    dd if=/dev/urandom of=${SHELTER_PHRASE} bs=1K count=1
+    chmod 600 ${SHELTER_PHRASE}
 }
 
 add_dir() {
@@ -244,6 +252,29 @@ build() {
     local src=""
     local dst=""
 
+    # Add the essential binaries
+    for i in "${ESSENTIAL_BINARIES[@]}"; do
+        i="$(which $i)"
+        debug "Copying essential binary $i ..."
+
+        copy_sodeps "$i"
+        copy_file_resolve_symlink "$i" "$i"
+    done
+
+    local kernel_version="$(uname -r)"
+
+    debug "Building initrd image: ${SHELTER_INITRD}"
+    mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
+    --postinst-script="${SHELTER_INITRD_CONF_DIR}/mkosi.postinst" \
+    --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_INITRD})" \
+    --extra-tree="${EXTRA_DIR}:/extra" \
+    --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
+    build
+
+    if [ $? -ne 0 ]; then
+        error "Error: failed to build initrd image with mkosi"
+        exit 1
+    fi
     # Parse the mapping between the source and destinaion
     for i in "${binaries[@]}"; do
         if [[ "$i" == *:* ]]; then
@@ -281,32 +312,27 @@ build() {
         copy_file_and_dir_no_resolve_symlink "$src" "$dst"
     done
 
-    # Add the essential binaries
-    for i in "${ESSENTIAL_BINARIES[@]}"; do
-        i="$(which $i)"
-        debug "Copying essential binary $i ..."
-
-        copy_sodeps "$i"
-        copy_file_resolve_symlink "$i" "$i"
-    done
-
     # Add the essential files
     for i in "${ESSENTIAL_FILES[@]}"; do
         copy_file_and_dir_no_resolve_symlink "$i"
     done
 
-    debug "Building initrd image: ${SHELTER_IMAGE}"
+    debug "Create luks keyfile"
+    create_phrase
 
-    local kernel_version="$(uname -r)"
+    debug "Building Disk image: ${SHELTER_DISK}"
     mkosi -f --debug -C "${SHELTER_CONF_DIR}" \
       --build-script="${SHELTER_CONF_DIR}/mkosi.build" \
       --postinst-script="${SHELTER_CONF_DIR}/mkosi.postinst" \
-      --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_IMAGE})" \
+      --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_DISK})" \
       --extra-tree="${EXTRA_DIR}:/extra" \
       --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
+      --passphrase="${SHELTER_PHRASE}" \
+      --repart-dir="${SHELTER_CONF_DIR}/mkosi.repart" \
       build
+      
     if [ $? -ne 0 ]; then
-        error "Error: failed to build initrd image with mkosi"
+        error "Error: failed to build disk image with mkosi"
         exit 1
     fi
 }
@@ -336,9 +362,10 @@ config_qemu() {
 
     local opts="$(cat <<EOF
 -accel kvm -m ${mem} -nographic -cpu host
--kernel '${SHELTER_KERNEL}' -initrd '${SHELTER_IMAGE}'
+-kernel '${SHELTER_KERNEL}' -initrd '${SHELTER_INITRD}'
 -append '${kern_cmd}'
 -device vhost-vsock-pci,guest-cid=${cid}
+-drive file='${SHELTER_DISK}',format=raw,if=virtio
 EOF
 )"
     echo -n "${bin} ${opts} ${extra_opts}"
@@ -352,8 +379,8 @@ start() {
         warn "Set user.max_user_namespaces to be 766996 forcibly."
         sysctl --write user.max_user_namespaces=766996
     fi
-
-    if [[ -s "${SHELTER_IMAGE}" && -s "${SHELTER_KERNEL}" ]]; then
+    
+    if [[ -s "${SHELTER_INITRD}" && -s "${SHELTER_DISK}" && -s "${SHELTER_KERNEL}" ]]; then
         local cid=$(randomize)
         store_stage "cid" "${cid}"
 
@@ -373,9 +400,33 @@ start() {
 
         systemd-run --user --description=Shelter --unit=shelter.service -p StandardInput=null -G "${cmd[@]}"
 
+        local wait_seconds=${SHELTER_TIMEOUT}
+        debug "Now waiting ${wait_seconds} seconds for the guest to open crypt disk ..."
+        local is_ready=0
+        
+        for ((i=${wait_seconds}; i>0; i--))
+        do
+            if ! is-active; then
+                error "Failed to run shelter guest"
+                return 1
+                fi
+        
+            if socat -u file:${SHELTER_PHRASE} vsock-connect:${cid}:4321 1>&- 2>&-; then
+                # The guest is ready
+                is_ready=1
+                break
+            fi
+                sleep 1
+        done
+
+        if [[ $is_ready -ne 1 ]]; then
+            error "Failed to open shelter guest disk"
+            stop
+            exit 1
+        fi
         debug "The guest is started at CID ${cid}"
     else
-        error "The files ${SHELTER_IMAGE} or ${SHELTER_KERNEL} is missing. You may need to run 'shelter build' first."
+        error "The files ${SHELTER_INITRD} or ${SHELTER_KERNEL} or ${SHELTER_DISK} is missing. You may need to run 'shelter build' first."
         exit 1
     fi
 }
