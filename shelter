@@ -342,6 +342,15 @@ build() {
     if [ -s "/boot/vmlinuz-${kernel_version}" ]; then
         cp -f "/boot/vmlinuz-${kernel_version}" "${SHELTER_KERNEL}"
         return 0
+    else
+        # Arch Linux doesn't have a versioned kernel image file
+        for kernel_image in /boot/vmlinu*; do
+            image_version=$(file -bL "$kernel_image" | grep -o 'version [^ ]*' | cut -d ' ' -f 2)
+            if [[ "$image_version" == "$kernel_version" ]]; then
+                cp -f $kernel_image ./image.vmlinuz
+                return 0
+            fi
+        done
     fi
 
     error "Error: can't find the currently active kernel from /boot/"
