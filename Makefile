@@ -55,7 +55,8 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	  done; \
 	}; \
 	sudo true && \
-	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip python3-pysocks which util-linux \
+	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip \
+	    python3-pysocks which util-linux cryptsetup \
 	    diffutils rsync sed systemd socat podman-docker \
 	    +busybox kmod bubblewrap qemu-kvm zstd \
 	    tar openssl
@@ -89,10 +90,11 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	  done; \
 	}; \
 	sudo apt update && \
-	  install_pkg apt-utils coreutils git sudo gawk grep python3-socks python3-pip util-linux \
-	  diffutils rsync libc-bin sed systemd socat \
-	  busybox-static kmod bubblewrap qemu-system-x86 zstd \
-	  tar openssl
+	  install_pkg apt-utils coreutils git sudo gawk grep python3-socks \
+	    python3-pip util-linux cryptsetup systemd-repart \
+	    diffutils rsync libc-bin sed systemd socat \
+	    busybox-static kmod bubblewrap qemu-system-x86 zstd \
+	    tar openssl
 
 	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
