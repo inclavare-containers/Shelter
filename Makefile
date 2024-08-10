@@ -119,25 +119,28 @@ build: # Build the necessary components (network access not required)
 clean: # Clean the build artifacts
 
 install: # Install the build artifacts
-	@sudo install -D -d 0755 "$(CONFIG_DIR)" && { \
-	    sudo install -m 0644 00_logger "$(CONFIG_DIR)"; \
-	    sudo install -m 0644 mkosi.conf "$(CONFIG_DIR)"; \
-		sudo install -m 0755 \
-		  mkosi.build mkosi.finalize mkosi.postinst rcS \
-		  "$(CONFIG_DIR)"; \
-	    sudo install -D -d 0755 "$(CONFIG_DIR)/conf" && { \
-		    sudo install -m 0755 "conf/power" "$(CONFIG_DIR)/conf"; \
-		    sudo install -m 0644 "conf/acpid.conf" "$(CONFIG_DIR)/conf"; \
-		    sudo install -m 0644 "conf/blacklist.conf" "$(CONFIG_DIR)/conf"; \
-		}; \
-		sudo install -D -d 0755 "$(CONFIG_DIR)/mkosi.repart" && { \
-			sudo install -m 0644 "mkosi.repart/10-root.conf" "$(CONFIG_DIR)/mkosi.repart"; \
-		}; \
-		sudo install -D -d 0755 "$(CONFIG_DIR)/initrd" && { \
-			sudo install -m 0755 "initrd/init" "$(CONFIG_DIR)/initrd"; \
-			sudo install -m 0644 "initrd/mkosi.conf" "$(CONFIG_DIR)/initrd"; \
-			sudo install -m 0755 "initrd/mkosi.postinst" "$(CONFIG_DIR)/initrd"; \
-		}; \
+	@sudo install -D -d 0755 "$(CONFIG_DIR)" && \
+	  sudo install -m 0644 00_logger "$(CONFIG_DIR)"; \
+	for d in initrd disk; do \
+	    dest="$(CONFIG_DIR)/$${d}"; \
+	    sudo install -D -d 0755 "$${dest}" && { \
+	        sudo install -D -d 0755 "$${dest}/conf" && { \
+	            sudo install -m 0755 "images/conf/power" "$${dest}/conf"; \
+	            sudo install -m 0644 "images/conf/acpid.conf" "$${dest}/conf"; \
+	            sudo install -m 0644 "images/conf/blacklist.conf" "$${dest}/conf"; \
+	        }; \
+	        cd images/$${d}; \
+	        sudo install -m 0644 "mkosi.conf" "$${dest}"; \
+	        sudo install -m 0755 \
+	            mkosi.build mkosi.finalize mkosi.postinst rcS \
+	            "$${dest}"; \
+	        cd - >/dev/null; \
+	    }; \
+	done; \
+	dest="$(CONFIG_DIR)/disk/mkosi.repart"; \
+	sudo install -D -d 0755 "$${dest}" && { \
+	    sudo install -m 0644 "images/disk/mkosi.repart/10-root.conf" \
+	      "$${dest}"; \
 	}
 
 	@sudo install -D -m 0755 shelter "$(PREFIX)/bin"
