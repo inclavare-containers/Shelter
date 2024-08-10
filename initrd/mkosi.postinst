@@ -1,9 +1,30 @@
+#!/usr/bin/env bash
+
+echo "SRCDIR: $SRCDIR"
+[ -n "$SRCDIR" ] && ls $SRCDIR
+
+echo "OUTPUTDIR: $OUTPUTDIR"
+[ -n "$OUTPUTDIR" ] && ls $OUTPUTDIR
+
+echo "BUILDROOT: $BUILDROOT"
+[ -n "$BUILDROOT" ] && ls $BUILDROOT
+
+echo "PACKAGEDIR: $PACKAGEDIR"
+[ -n "$PACKAGEDIR" ] && ls $PACKAGEDIR
+
+echo "ARTIFACTDIR: $ARTIFACTDIR"
+[ -n "$ARTIFACTDIR" ] && ls $ARTIFACTDIR
+
 rsync -v --checksum --links --info=skip2 --recursive \
---keep-dirlinks $BUILDROOT/extra/* $BUILDROOT/
+  --keep-dirlinks $BUILDROOT/extra/* $BUILDROOT/
 
 cp -f ./init $BUILDROOT/init
 
-ln -srf $BUILDROOT/usr/bin/busybox $BUILDROOT/bin/sh
+BUSYBOX="$BUILDROOT/usr/bin/busybox"
+[ ! -x "$BUSYBOX" ] && BUSYBOX="$BUILDROOT/usr/sbin/busybox"
+
+ln -srf "$BUSYBOX" "$BUILDROOT/bin/sh"
+ln -srf "$BUSYBOX" "$BUILDROOT/usr/bin/true"
 
 for link_name in {lsmod,rmmod,insmod,modinfo,modprobe,depmod}; do
     ln -srf $BUILDROOT/usr/bin/kmod $BUILDROOT/usr/bin/$link_name
