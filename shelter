@@ -26,6 +26,9 @@ SHELTER_TIMEOUT=60
 # with shelter run/start
 COMMANDS=()
 
+# Record the tags to mount virtiofs in guest
+declare -A VIRTIOFS_MAPPING
+
 # Function: Display help information
 show_help() {
     cat <<EOF
@@ -413,6 +416,7 @@ config_qemu() {
     local kern_cmd="$3"
     local cid="$4"
     local extra_opts="$5"
+    local virtiofs_nr=$6
 
     if [ x"${bin}" = x"" ]; then
         bin="qemu-system-x86_64"
@@ -432,9 +436,18 @@ config_qemu() {
 EOF
 )"
 
+    for (( i=0; i<${virtiofs_nr}; i++ )); do
+        opts+=" -chardev socket,id=virtiofs-sock-${i},path=${SHELTER_STAGE_DIR}/virtiofs-${i}.sock \
+          -device vhost-user-fs-pci,queue-size=1024,chardev=virtiofs-sock-${i},tag=virtiofs-${i}"
+    done
+
+    if [ ${virtiofs_nr} -gt 0 ]; then
+        opts+=" -object memory-backend-file,id=mem,size=${mem},mem-path=/dev/shm,share=on -numa node,memdev=mem"
+    fi
+
     local image_type="$(get_stage image_type)"
     if [ x"$image_type" = x"disk" ]; then
-        opts="${opts} -drive file='${SHELTER_DISK}',format=raw,if=virtio"
+        opts+=" -drive file='${SHELTER_DISK}',format=raw,if=virtio"
     fi
 
     echo -n "${bin} ${opts} ${extra_opts}"
@@ -475,6 +488,9 @@ start() {
         shift
     done
 
+    COMMANDS=${opts[@]}
+
+    local virtiofs_nr=0
     for i in "${volumes[@]}"; do
         local src
         local dst
@@ -486,10 +502,21 @@ start() {
             dst="$i"
         fi
 
-        debug "host-guest sharing between $src and $dst"
-    done
+        if [ ! -d "${src}" ]; then
+            error "The host sharing directory ${src} doesn't exist."
+            exit 1
+        fi
 
-    COMMANDS=${opts[@]}
+        debug "host-guest sharing between $src and $dst"
+
+        virtiofsd \
+          --socket-path="${SHELTER_STAGE_DIR}/virtiofs-${virtiofs_nr}.sock" \
+          --shared-dir "${src}" &
+        store_stage "virtiofs-${virtiofs_nr}.pid" "$!"
+
+        VIRTIOFS_MAPPING["${virtiofs_nr}"]="${dst}"
+        virtiofs_nr=$((virtiofs_nr + 1))
+    done
 
     local max_user_ns="$(sysctl --binary --quiet user.max_user_namespaces)"
 
@@ -510,7 +537,7 @@ start() {
         local kern_cmdline="$(get_conf ${vmm}.kern_cmdline)"
         local opts="$(get_conf ${vmm}.opts)"
 
-        cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}" "${opts}")"
+        cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}" "${opts}" ${virtiofs_nr})"
     fi
 
     debug "qemu command: $cmd"
@@ -633,12 +660,36 @@ stop() {
     done
 
     systemctl --user stop shelter.service
+    for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
+        kill "$(cat ${f})"
+    done
+
     error "Shelter has been forcibly shut down"
 }
 
 exec() {
     if [[ $1 == "--" ]]; then
         shift
+    fi
+
+    if [ ${#VIRTIOFS_MAPPING[@]} -ne 0 ]; then
+        # Save and clean parameters
+        local opts="$@"
+        set --
+
+        for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.sock; do
+            f="$(basename $f)"
+            f="${f##*-}"
+            f="${f%.sock}"
+
+            set -- "$@" \
+              "[ ! -d ${VIRTIOFS_MAPPING[${f}]} ] && \
+                   mkdir -p ${VIRTIOFS_MAPPING[${f}]}; \
+                 mount -t virtiofs virtiofs-${f} ${VIRTIOFS_MAPPING[${f}]}; "
+        done
+
+        debug "Pre-run the commands \"$@\""
+        set -- "$@" "${opts}"
     fi
 
     local cid="$(get_stage cid)"

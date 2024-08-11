@@ -122,3 +122,11 @@ WARN=1
 INFO=2
 DEBUG=3
 ```
+
+### 挂载目录
+
+通过指定-v选项可以将host上的目录透传给guest使用：
+
+```shell
+shelter run -v /root/dir0:/mnt/dir0 -v /root/dir1:/mnt/dir1 ls /mnt/dir0 /mnt/dir1
+```
