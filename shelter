@@ -22,6 +22,10 @@ ESSENTIAL_FILES=()
 
 SHELTER_TIMEOUT=60
 
+# Record the commands to run in guest after parsing the parameters
+# with shelter run/start
+COMMANDS=()
+
 # Function: Display help information
 show_help() {
     cat <<EOF
@@ -452,6 +456,41 @@ start() {
         exit 1
     fi
 
+    local opts=()
+    local volumes=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -v|--volume)
+                if [ -z "$2" ]; then
+                    error "Error: -v/--volume requires a value." >&2
+                    exit 1
+                fi
+                volumes+=("$2")
+                shift
+                ;;
+            *)
+                opts+=("$1")
+                ;;
+        esac
+        shift
+    done
+
+    for i in "${volumes[@]}"; do
+        local src
+        local dst
+
+        if [[ "$i" == *:* ]]; then
+            IFS=':' read -r src dst <<< "$i"
+        else
+            src="$i"
+            dst="$i"
+        fi
+
+        debug "host-guest sharing between $src and $dst"
+    done
+
+    COMMANDS=${opts[@]}
+
     local max_user_ns="$(sysctl --binary --quiet user.max_user_namespaces)"
 
     # Work around the default zero max_user_namespaces value on apasa
@@ -520,7 +559,7 @@ is-active() {
 }
 
 run() {
-    start
+    start "$@"
 
     debug "The guest is booting"
 
@@ -556,8 +595,8 @@ run() {
         shift
     fi
 
-    debug "Run command in guest: '$@'"
-    exec $@
+    debug "Run command in guest: '${COMMANDS}'"
+    exec ${COMMANDS}
 
     stop
 }
@@ -640,7 +679,7 @@ main() {
 
     case $subcommand in
         start)
-            start
+            start "$@"
             ;;
         stop)
             stop
