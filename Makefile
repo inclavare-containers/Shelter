@@ -56,7 +56,8 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	}; \
 	sudo true && \
 	  install_pkg coreutils git sudo gawk grep python3.11 python3-pip \
-	    python3-pysocks which util-linux cryptsetup \
+	    python3-pysocks which util-linux cryptsetup curl libseccomp-devel \
+	    libcap-ng-devel \
 	    diffutils rsync sed systemd socat podman-docker \
 	    +busybox kmod bubblewrap qemu-kvm zstd \
 	    tar openssl
@@ -66,6 +67,20 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 
 	# Work around mkosi for /usr/lib/os-release. See 1149444ef for the details
 	@sudo ln -sfn /etc/os-release /usr/lib/os-release
+
+	@if [ -s "$${HOME}/.cargo/env" ]; then \
+	    if ! which cargo; then \
+	        source $${HOME}/.cargo/env; \
+	    fi; \
+	else \
+	    curl https://sh.rustup.rs -sSf | sh && \
+	      source $${HOME}/.cargo/env; \
+	fi
+
+	@if [ ! -x "libexec/virtiofsd" ]; then \
+	    [ ! -d "virtiofsd" ] && \
+	      git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1; \
+	fi
 
 ifeq ($(IS_APSARA), false)
 	@sudo pip3 install toml-cli --proxy=$(HTTPS_PROXY)
@@ -115,6 +130,10 @@ endif
 prepare: _depend # Download and configure the necessary components (network access required)
 
 build: # Build the necessary components (network access not required)
+	@if [ ! -x "libexec/virtiofsd" -a -d virtiofsd ]; then \
+	    cd virtiofsd && cargo build --release && \
+	      cp -f target/release/virtiofsd ../libexec; \
+	fi
 
 clean: # Clean the build artifacts
 
@@ -168,6 +187,8 @@ endif
 	    sudo install -m 0755 libexec/hygon/hag /usr/local/sbin/hag; \
 	    sudo install -m 0755 shelter.hygon.conf "$(CONFIG)"; \
 	fi
+
+	@install -m 0755 libexec/virtiofsd "$(PREFIX)/bin"
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \

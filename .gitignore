@@ -28,3 +28,6 @@ vars.mk
 
 # Ignore the local mkosi clone
 libexec/mkosi
+
+# Ignore the local virtiofsd clone
+virtiofsd
