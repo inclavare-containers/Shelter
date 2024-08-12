@@ -77,18 +77,12 @@ endif
 	# Work around mkosi for /usr/lib/os-release. See 1149444ef for the details
 	@sudo ln -sfn /etc/os-release /usr/lib/os-release
 
-	@if [ ! -x "libexec/virtiofsd" ]; then \
-	    [ ! -d "virtiofsd" ] && { \
-	        if [ -s "$${HOME}/.cargo/env" ]; then \
-	            if ! which cargo; then \
-	                source $${HOME}/.cargo/env; \
-	            fi; \
-	        else \
-	            curl https://sh.rustup.rs -sSf | sh && \
-	              source $${HOME}/.cargo/env; \
-	        fi; \
-	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1; \
-		}; \
+	@if [ ! -x "libexec/redhat/virtiofsd" ]; then \
+	    [ ! -d "virtiofsd" ] && \
+	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1 || \
+	        true; \
+	    [ ! -s "$${HOME}/.cargo/env" ] && \
+	        curl https://sh.rustup.rs -sSf | sh || true; \
 	fi
 
 ifeq ($(IS_APSARA), false)
@@ -115,7 +109,8 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	}; \
 	sudo apt update && \
 	  install_pkg apt-utils coreutils git sudo gawk grep python3-socks \
-	    python3-pip util-linux cryptsetup systemd-repart \
+	    python3-pip util-linux cryptsetup systemd-repart curl \
+	    libseccomp-dev libcap-ng-dev \
 	    diffutils rsync libc-bin sed systemd socat \
 	    busybox-static kmod bubblewrap qemu-system-x86 zstd \
 	    tar openssl
@@ -124,6 +119,14 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 
 	@if ! which docker >/dev/null 2>&1; then \
 	    sudo apt-get install -y docker.io; \
+	fi
+
+	@if [ ! -x "libexec/debian/virtiofsd" ]; then \
+	    [ ! -d "virtiofsd" ] && \
+	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1 || \
+	        true; \
+	    [ ! -s "$${HOME}/.cargo/env" ] && \
+	        curl https://sh.rustup.rs -sSf | sh || true; \
 	fi
 
 _depend: # Install the build and runtime dependencies
@@ -139,10 +142,19 @@ endif
 prepare: _depend # Download and configure the necessary components (network access required)
 
 build: # Build the necessary components (network access not required)
-	@if [ ! -x "libexec/virtiofsd" -a -d virtiofsd ]; then \
+ifeq ($(IS_DEBIAN), true)
+	@! which cargo && source $${HOME}/.cargo/env || true; \
+	if [ ! -x "libexec/debian/virtiofsd" -a -d virtiofsd ]; then \
 	    cd virtiofsd && cargo build --release && \
-	      cp -f target/release/virtiofsd ../libexec; \
+	      cp -f target/release/virtiofsd ../libexec/debian; \
 	fi
+else ifeq ($(IS_DEBIAN), false)
+	@! which cargo && source $${HOME}/.cargo/env || true; \
+	if [ ! -x "libexec/redhat/virtiofsd" -a -d virtiofsd ]; then \
+	    cd virtiofsd && cargo build --release && \
+	      cp -f target/release/virtiofsd ../libexec/redhat; \
+	fi
+endif
 
 clean: # Clean the build artifacts
 
@@ -196,8 +208,11 @@ endif
 	    sudo install -m 0755 libexec/hygon/hag /usr/local/sbin/hag; \
 	    sudo install -m 0755 shelter.hygon.conf "$(CONFIG)"; \
 	fi
-
-	@install -m 0755 libexec/virtiofsd "$(PREFIX)/bin"
+ifeq ($(IS_DEBIAN), true)
+	@install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/bin"
+else ifeq ($(IS_DEBIAN), false)
+	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/bin"
+endif
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
