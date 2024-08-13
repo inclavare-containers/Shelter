@@ -26,6 +26,10 @@ else
 IS_APSARA := false
 endif
 
+ifeq ($(IS_APSARA), true)
+include apsara.mk
+endif
+
 .PHONE: help _depend_redhat _depend_debian _depend prepare build clean \
     install uninstall test all sync _build_container container FORCE
 
@@ -62,13 +66,8 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	    +busybox kmod bubblewrap qemu-kvm zstd glib2-devel \
 	    tar openssl
 
-ifeq ($(IS_APSARA), false)
-	@cd libexec/apsara; \
-	  sudo yum install -y mpdecimal-2.5.1-3.al8.x86_64.rpm \
-	    python3.11-pip-wheel-22.3.1-2.al8.noarch.rpm \
-		python3.11-setuptools-wheel-65.5.1-2.al8.noarch.rpm \
-		python3.11-libs-3.11.2-2.al8.x86_64.rpm \
-		python3.11-3.11.2-2.al8.x86_64.rpm
+ifeq ($(IS_APSARA), true)
+	@$(MAKE) _depend_apsara
 endif
 
 	# Work around the python 3.6 lower than the requirement from mkosi
@@ -196,11 +195,6 @@ endif
 	  sudo cp -r libexec/mkosi/* "$(PREFIX)/libexec/shelter/mkosi" && \
 	  sudo ln -sfn "$(PREFIX)/libexec/shelter/mkosi/bin/mkosi" "$(PREFIX)/bin/mkosi"
 
-ifeq ($(IS_APSARA), true)
-	@sudo rpm -ivh libexec/apsara/busybox-1.35.0-3.el8.x86_64.rpm || true
-	@sudo pip3 install libexec/apsara/*.whl
-endif
-
 	# FIXIME: assume hygon platforms only support redhat-like system
 	@if lscpu | grep -q -o 'HygonGenuine'; then \
 	    sudo install -m 0755 libexec/hygon/hag /usr/local/sbin/hag; \
@@ -210,6 +204,10 @@ ifeq ($(IS_DEBIAN), true)
 	@install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/bin"
 else ifeq ($(IS_DEBIAN), false)
 	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/bin"
+endif
+
+ifeq ($(IS_APSARA), true)
+	@$(MAKE) _install_apsara
 endif
 
 uninstall: # Uninstall the build artifacts
