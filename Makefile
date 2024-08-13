@@ -140,14 +140,14 @@ prepare: _depend # Download and configure the necessary components (network acce
 
 build: # Build the necessary components (network access not required)
 ifeq ($(IS_DEBIAN), true)
-	@! which cargo >/dev/null && source $${HOME}/.cargo/env || true; \
-	if [ ! -x "libexec/debian/virtiofsd" -a -d virtiofsd ]; then \
+	@if [ ! -x "libexec/debian/virtiofsd" -a -d virtiofsd ]; then \
+		! which cargo >/dev/null && source $${HOME}/.cargo/env || true; \
 	    cd virtiofsd && cargo build --release && \
 	      cp -f target/release/virtiofsd ../libexec/debian; \
 	fi
 else ifeq ($(IS_DEBIAN), false)
-	@! which cargo >/dev/null && source $${HOME}/.cargo/env || true; \
-	if [ ! -x "libexec/redhat/virtiofsd" -a -d virtiofsd ]; then \
+	@if [ ! -x "libexec/redhat/virtiofsd" -a -d virtiofsd ]; then \
+		! which cargo >/dev/null && source $${HOME}/.cargo/env || true; \
 	    cd virtiofsd && cargo build --release && \
 	      cp -f target/release/virtiofsd ../libexec/redhat; \
 	fi
