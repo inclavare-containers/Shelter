@@ -10,7 +10,8 @@ vi /etc/shelter.conf
 确保在`opts`行中进行了如下配置：
 
 ```shell
-opts = "-drive if=pflash,format=raw,unit=0,file=/usr/share/edk2/ovmf/OVMF_CODE.cc.fd,readonly=on -object sev-guest,id=sev0,policy=0x1,cbitpos=47,reduced-phys-bits=5 -machine q35,memory-encryption=sev0"
+firmware = "/usr/share/edk2/ovmf/OVMF_CODE.cc"
+opts = "-object sev-guest,id=sev0,policy=0x1,cbitpos=47,reduced-phys-bits=5 -machine q35,memory-encryption=sev0"
 ```
 
 然后运行`shelter run cat /proc/cpuinfo`。示例输出如下：

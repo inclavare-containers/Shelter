@@ -7,12 +7,16 @@ SHELTER_CONF_DIR="/etc/shelter.d"
 SHELTER_INITRD_CONF_DIR="${SHELTER_CONF_DIR}/initrd"
 SHELTER_DISK_CONF_DIR="${SHELTER_CONF_DIR}/disk"
 
-SHELTER_DEFAULT_STAGE="default"
-SHELTER_STAGE_DIR="/var/run/shelter/${SHELTER_DEFAULT_STAGE}"
+IMAGE_ID="default"
+
+SHELTER_DEFAULT_STAGE="${IMAGE_ID}"
+SHELTER_RUNTIME_DIR="/var/run/shelter"
+SHELTER_STAGE_DIR="${SHELTER_RUNTIME_DIR}/${SHELTER_DEFAULT_STAGE}"
 SHELTER_INITRD="${SHELTER_STAGE_DIR}/initrd"
 SHELTER_KERNEL="${SHELTER_STAGE_DIR}/kernel"
 SHELTER_DISK="${SHELTER_STAGE_DIR}/disk"
 SHELTER_PASSPHRASE="${SHELTER_STAGE_DIR}/passphrase"
+SHELTER_IMAGE_CONF="${SHELTER_STAGE_DIR}/shelter.conf"
 
 EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
 CONF="${SHELTER_STAGE_DIR}/build.conf"
@@ -40,6 +44,7 @@ Available SubCommands:
     exec    exec a shell commad in shelter
     status  Query the status of shelter
     clean   Remove output image and cache
+    images  show the images built by shelter
 
 Options:
     -h, --help  Show this help message and exit
@@ -74,6 +79,20 @@ add_dir() {
     if [ ! -d "${EXTRA_DIR}$dir_path" ]; then
         mkdir -p "${EXTRA_DIR}${dir_path}"
     fi
+}
+
+set_image_dir() {
+    local image_id=${1-default}
+    IMAGE_ID=${image_id}
+    SHELTER_DEFAULT_STAGE="${IMAGE_ID}"
+    SHELTER_STAGE_DIR="${SHELTER_RUNTIME_DIR}/${SHELTER_DEFAULT_STAGE}"
+    SHELTER_INITRD="${SHELTER_STAGE_DIR}/initrd"
+    SHELTER_KERNEL="${SHELTER_STAGE_DIR}/kernel"
+    SHELTER_DISK="${SHELTER_STAGE_DIR}/disk"
+    SHELTER_PASSPHRASE="${SHELTER_STAGE_DIR}/passphrase"
+    SHELTER_IMAGE_CONF="${SHELTER_STAGE_DIR}/shelter.conf"
+    EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
+    info "app's image id: $IMAGE_ID"
 }
 
 copy_file_and_dir_no_resolve_symlink() {
@@ -200,6 +219,7 @@ build() {
     # The default image type is initrd
     local image_type="$(get_conf image_type)"
     image_type="${image_type:=initrd}"
+    image_id="${image_id:=default}"
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -217,11 +237,15 @@ build() {
                 fi
                 ;;
             -T|--image-type)
-                if [ "$2" != "initrd" && "$2" != "disk" ]; then
+                if [[ "$2" != "initrd" && "$2" != "disk" ]]; then
                     error "Error: invalid -T|--image-type value." >&2
                     return 1
                 fi
                 image_type="$2"
+                shift
+                ;;
+            -t|--tag)
+                image_id="$2"
                 shift
                 ;;
             *)
@@ -232,7 +256,16 @@ build() {
         shift
     done
 
+ 
+    if image_exists $image_id ;then 
+        warn "image exist, old image will be replaced"
+    fi
+
+    set_image_dir ${image_id}
+
+    EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
     debug "Gather files to be copied and copy into $EXTRA_DIR"
+
     rm -rf "$EXTRA_DIR"
 
     if [ ! -d "$EXTRA_DIR" ]; then
@@ -388,6 +421,7 @@ build() {
 
     if [ -s "/boot/vmlinuz-${kernel_version}" ]; then
         cp -f "/boot/vmlinuz-${kernel_version}" "${SHELTER_KERNEL}"
+        info "Build successful, image id: $IMAGE_ID"
         return 0
     else
         # Arch Linux doesn't have a versioned kernel image file
@@ -395,6 +429,7 @@ build() {
             image_version=$(file -bL "$kernel_image" | grep -o 'version [^ ]*' | cut -d ' ' -f 2)
             if [[ "$image_version" == "$kernel_version" ]]; then
                 cp -f $kernel_image ./image.vmlinuz
+                info "Build successful, image id: $IMAGE_ID"
                 return 0
             fi
         done
@@ -410,6 +445,12 @@ get_conf() {
     toml get --toml-path "${SHELTER_CONF}" "${name}"
 }
 
+get_image_conf() {
+    local name="$1"
+
+    toml get --toml-path "${SHELTER_IMAGE_CONF}" "${name}"
+}
+
 config_qemu() {
     local bin="$1"
     local mem="$2"
@@ -417,6 +458,8 @@ config_qemu() {
     local cid="$4"
     local extra_opts="$5"
     local virtiofs_nr=$6
+    local cpus="$7"
+    local firmware="$8"
 
     if [ x"${bin}" = x"" ]; then
         bin="qemu-system-x86_64"
@@ -426,6 +469,10 @@ config_qemu() {
         mem="4G"
     fi
 
+    if [ x"${cpus}" = x"" ]; then
+        cpus="2"
+    fi
+
     kern_cmd="${kern_cmd} console=ttyS0"
 
     local opts="$(cat <<EOF
@@ -433,8 +480,12 @@ config_qemu() {
 -kernel '${SHELTER_KERNEL}' -initrd '${SHELTER_INITRD}'
 -append '${kern_cmd}'
 -device vhost-vsock-pci,guest-cid=${cid}
+-smp ${cpus} 
 EOF
 )"
+    if [ ! -z ${firmware} ];then
+       opts+=" -drive if=pflash,format=raw,unit=0,file=${firmware},readonly=on"
+    fi
 
     for (( i=0; i<${virtiofs_nr}; i++ )); do
         opts+=" -chardev socket,id=virtiofs-sock-${i},path=${SHELTER_STAGE_DIR}/virtiofs-${i}.sock \
@@ -534,16 +585,25 @@ start() {
     if [ x"${vmm}" = x"qemu" ]; then
         local bin="$(get_conf ${vmm}.bin)"
         local mem="$(get_conf ${vmm}.mem)"
+        local cpus="$(get_conf ${vmm}.cpus)"
         local kern_cmdline="$(get_conf ${vmm}.kern_cmdline)"
+        local firmware="$(get_conf ${vmm}.firmware)"
         local opts="$(get_conf ${vmm}.opts)"
 
-        cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}" "${opts}" ${virtiofs_nr})"
+        #if image.conf exist, repalase the parameters
+        if [ -s ${SHELTER_IMAGE_CONF} ]; then 
+           mem="$(get_image_conf mem)"
+           cpus="$(get_image_conf cpus)"
+        fi
+
+        cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}" "${opts}" "${virtiofs_nr}" "${cpus}" "${firmware}")"
     fi
 
     debug "qemu command: $cmd"
     eval cmd=("$cmd")
 
-    systemd-run --user --description=Shelter --unit=shelter.service -p StandardInput=null -G "${cmd[@]}"
+    unit_name="shelter_${IMAGE_ID}"
+    systemd-run --user --description=Shelter --unit="$unit_name" -p StandardInput=null -G "${cmd[@]}"
     if [ $? -ne 0 ]; then
         error "Failed to run systemd-run to launch qemu."
         exit 1
@@ -582,7 +642,7 @@ start() {
 }
 
 is-active() {
-    systemctl --user -q is-active shelter.service
+    systemctl --user -q is-active shelter_${IMAGE_ID}.service
 }
 
 run() {
@@ -630,7 +690,7 @@ run() {
 
 status() {
     if is-active; then
-        systemctl --user status shelter.service
+        systemctl --user status shelter_${IMAGE_ID}.service
         return 0
     fi
 
@@ -659,7 +719,7 @@ stop() {
         sleep 1
     done
 
-    systemctl --user stop shelter.service
+    systemctl --user stop shelter_${IMAGE_ID}.service
     for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
         kill "$(cat ${f})"
     done
@@ -701,6 +761,54 @@ clean() {
     rm -rf "${EXTRA_DIR}"
 }
 
+show_images() {
+    printf "%-12s | %-10s | %-12s | %-12s | %-10s | %-20s \n" "ID" "IMAGE_TYPE" "IMAGE_HASH" "KERNEL_HASH" "IMAGE_SIZE" "CREATED"
+
+    for id in `ls -t ${SHELTER_RUNTIME_DIR}`; do
+       image_dir=${SHELTER_RUNTIME_DIR}/${id}
+       if [ -s ${image_dir}/image_type ];then
+            image_type=`cat ${image_dir}/image_type`
+       fi
+
+       if [ -s ${image_dir}/initrd ];then
+            initrd_hash=`sha1sum ${image_dir}/initrd |awk '{print substr($1, 1, 9)}'`
+            initrd_size=`ls -l -h $(readlink -f ${image_dir}/initrd)|awk '{print $5}'`
+            create_time=`ls -l --time-style=+"%m-%d+%H:%M:%S" ${image_dir}/initrd | awk '{print $6}'`
+       fi
+
+       if [ -s ${image_dir}/kernel ];then
+            kernel_hash=`sha1sum ${image_dir}/kernel | awk '{print substr($1, 1, 9)}'`
+       fi 
+
+       if [ ! -z "$image_type" ] && [ ! -s ${image_dir}/initrd ] && [ ! -s ${image_dir}/kernel ];then
+            debug "Bad Image, miss some file"
+       else
+            printf "%-12s | %-10s | %-12s | %-12s | %-10s | %-20s \n" ${id} ${image_type} ${initrd_hash} ${kernel_hash} ${initrd_size} ${create_time}
+       fi
+    done
+}
+
+image_exists() {
+    local image_id=$1
+    if [ -s ${SHELTER_RUNTIME_DIR}/${image_id}/initrd ];then 
+        return 0
+    else 
+        return 1 
+    fi
+}
+
+prepre_new_image() {
+    local image_id=$1
+    if  ! image_exists ${image_id} ;then 
+         warn "shelter id is not existed or provided, use default"
+         set_image_dir
+         return 1
+    else 
+       set_image_dir ${image_id}
+       return 0
+    fi 
+}
+
 main() {
     # Check if a subcommand or help option is provided
     if [ $# -lt 1 ]; then
@@ -730,25 +838,46 @@ main() {
 
     case $subcommand in
         start)
+            if prepre_new_image $1; then 
+                shift
+            fi 
             start "$@"
             ;;
         stop)
+            if prepre_new_image $1; then 
+                shift
+            fi 
             stop
             ;;
         build)
             build "$@"
             ;;
         status)
+            if prepre_new_image $1; then 
+                shift
+            fi 
             status
             ;;
         run)
+            if prepre_new_image $1; then 
+                shift
+            fi 
             run "$@"
             ;;
         exec)
+            if prepre_new_image $1; then 
+                shift
+            fi 
             exec "$@"
             ;;
         clean)
+            if prepre_new_image $1; then 
+                shift
+            fi 
             clean
+            ;;
+        images)
+            show_images
             ;;
         help)
             show_help

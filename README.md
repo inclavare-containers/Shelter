@@ -37,29 +37,37 @@ Shelter是一个将应用沙箱化的启动器。
 
 4. 构建shelter镜像
     ~~~sh
-    shelter build
+    shelter build -t <image_id>
     ~~~
 
-5. 直接运行shelter镜像中的指定命令
+    > image_id 用于设置镜像的id， 默认为default， 注意：shelter会覆盖相同id的镜像
+
+5. 查询构建的镜像信息
+    ```sh
+    shelter images
+    ```
+
+6. 直接运行shelter镜像中的指定命令
     ~~~sh
-    shelter run cat /proc/cmdline
+    shelter run <image_id> cat /proc/cmdline
     ~~~
 
     也可以分步执行：
     - 创建shelter实例
       ~~~sh
-      shelter start
+      shelter <image_id> start
       ~~~
 
     - 在创建的shelter实例中运行镜像中的指定命令
       ~~~sh
-      shelter exec cat /proc/cmdline
+      shelter <image_id> exec cat /proc/cmdline
       ~~~
 
     - 停止shelter实例
       ~~~sh
-      shelter stop
+      shelter <image_id> stop
       ~~~
+    > image_id 为需要启动的image的id，默认为default 
 
 ## 构建和运行Shelter容器镜像
 
@@ -87,6 +95,7 @@ Available SubCommands:
     exec    exec a shell commad in shelter
     status  Query the status of shelter
     clean   Remove output image and cache
+    images  show the images built by shelter
 
 Options:
     -h, --help  Show this help message and exit
@@ -98,17 +107,28 @@ Shelter默认构建的initramfs的发行版版本与host一致，支持的发行
 
 ### 配置Shelter
 
-Shelter的配置文件位于`/etc/shelter.conf`；格式为TOML。
+Shelter的配置文件分为全局配置和shelter镜像配置，全局配置位于`/etc/shelter.conf`；格式为TOML，shelter镜像配置需要放置在`/var/run/shelter/<image_id>/shelter.conf`， shelter镜像配置不是必须的，若提供了，则会覆盖默认配置中对应的配置 
 
-下面是一个示例：
+下面是一个默认配置(./shelter.hygon.conf)的示例：
 ```toml
+image_type = "initrd"
 vmm = "qemu"
 
 [qemu]
-bin = "/usr/bin/qemu-system-x86_64"
+bin = "/usr/libexec/qemu-kvm"
 mem = "4G"
+cpus = "2"
 kern_cmdline = ""
+firmware = "/usr/share/edk2/ovmf/OVMF_CODE.cc"
+opts = "-object sev-guest,id=sev0,policy=0x1,cbitpos=47,reduced-phys-bits=5 -machine q35,memory-encryption=sev0"
 ```
+
+下面是一个镜像配置(./shelter.image.conf)的示例
+```
+mem = "8G"
+cpus = "4"
+```
+目前只支持`内存`和`cpu`数的定制
 
 ### 调试
 
