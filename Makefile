@@ -79,10 +79,9 @@ endif
 
 	@if [ ! -x "libexec/redhat/virtiofsd" ]; then \
 	    [ ! -d "virtiofsd" ] && \
-	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1 || \
-	        true; \
+	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1; \
 	    [ ! -s "$${HOME}/.cargo/env" ] && \
-	        curl https://sh.rustup.rs -sSf | sh || true; \
+	        curl https://sh.rustup.rs -sSf | sh; \
 	fi
 
 ifeq ($(IS_APSARA), false)
@@ -123,10 +122,9 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 
 	@if [ ! -x "libexec/debian/virtiofsd" ]; then \
 	    [ ! -d "virtiofsd" ] && \
-	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1 || \
-	        true; \
+	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1; \
 	    [ ! -s "$${HOME}/.cargo/env" ] && \
-	        curl https://sh.rustup.rs -sSf | sh || true; \
+	        curl https://sh.rustup.rs -sSf | sh; \
 	fi
 
 _depend: # Install the build and runtime dependencies
@@ -143,13 +141,13 @@ prepare: _depend # Download and configure the necessary components (network acce
 
 build: # Build the necessary components (network access not required)
 ifeq ($(IS_DEBIAN), true)
-	@! which cargo && source $${HOME}/.cargo/env || true; \
+	@! which cargo >/dev/null && source $${HOME}/.cargo/env || true; \
 	if [ ! -x "libexec/debian/virtiofsd" -a -d virtiofsd ]; then \
 	    cd virtiofsd && cargo build --release && \
 	      cp -f target/release/virtiofsd ../libexec/debian; \
 	fi
 else ifeq ($(IS_DEBIAN), false)
-	@! which cargo && source $${HOME}/.cargo/env || true; \
+	@! which cargo >/dev/null && source $${HOME}/.cargo/env || true; \
 	if [ ! -x "libexec/redhat/virtiofsd" -a -d virtiofsd ]; then \
 	    cd virtiofsd && cargo build --release && \
 	      cp -f target/release/virtiofsd ../libexec/redhat; \
