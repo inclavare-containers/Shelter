@@ -237,6 +237,13 @@ test: # Run verify-signature demo with shelter
 	    /payload/archive.tar.gz.sig \
 	    /payload/archive.tar.gz
 
+	@echo -e "\033[1;31mRunning the DEMO mount at host ...\033[0m"
+	@ls -l demos libexec
+
+	@echo -e "\033[1;31mRunning the DEMO mount at shelter guest ...\033[0m"
+	@./shelter run -v demos:/root/demos -v libexec:/root/libexec \
+	  ls -l /root/demos /root/libexec
+
 all: # Equivalent to make prepare build install
 	@make prepare build install
 
