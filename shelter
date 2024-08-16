@@ -804,7 +804,7 @@ image_exists() {
 prepre_new_image() {
     local image_id=$1
     if  ! image_exists ${image_id} ;then 
-         warn "shelter id is not existed or provided, use default"
+         warn "Image id \"${image_id}\" doesn't exist, creating the default \"${IMAGE_ID}\""
          set_image_dir
          return 1
     else 
