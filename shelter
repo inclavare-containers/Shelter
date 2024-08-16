@@ -801,16 +801,23 @@ image_exists() {
     fi
 }
 
-prepre_new_image() {
-    local image_id=$1
-    if  ! image_exists ${image_id} ;then 
-         warn "Image id \"${image_id}\" doesn't exist, creating the default \"${IMAGE_ID}\""
+prepre_image() {
+    local image_id="$1"
+
+    if [[ "${image_id}" == -* ]]; then
+        info "Using the default image \"${IMAGE_ID}\""
+        set_image_dir
+        return 1
+    fi
+
+    if ! image_exists "${image_id}"; then
+         warn "Image id \"${image_id}\" doesn't exist, using the default image \"${IMAGE_ID}\""
          set_image_dir
          return 1
-    else 
-       set_image_dir ${image_id}
-       return 0
-    fi 
+    fi
+
+    set_image_dir "${image_id}"
+    return 0
 }
 
 main() {
@@ -842,13 +849,13 @@ main() {
 
     case $subcommand in
         start)
-            if prepre_new_image $1; then 
+            if prepre_image "$1"; then
                 shift
             fi 
             start "$@"
             ;;
         stop)
-            if prepre_new_image $1; then 
+            if prepre_image "$1"; then
                 shift
             fi 
             stop
@@ -857,25 +864,25 @@ main() {
             build "$@"
             ;;
         status)
-            if prepre_new_image $1; then 
+            if prepre_image "$1"; then
                 shift
             fi 
             status
             ;;
         run)
-            if prepre_new_image $1; then 
+            if prepre_image "$1"; then
                 shift
             fi 
             run "$@"
             ;;
         exec)
-            if prepre_new_image $1; then 
+            if prepre_image "$1"; then
                 shift
             fi 
             exec "$@"
             ;;
         clean)
-            if prepre_new_image $1; then 
+            if prepre_image "$1"; then
                 shift
             fi 
             clean
