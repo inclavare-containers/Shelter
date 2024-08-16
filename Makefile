@@ -79,6 +79,11 @@ endif
 	@if [ ! -x "libexec/redhat/virtiofsd" ]; then \
 	    [ ! -d "virtiofsd" ] && \
 	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1; \
+	        cd virtiofsd && { \
+	            git config user.name "shelter-dev"; \
+	            git config user.email "shelter-dev"; \
+	            git am ../patches/virtiofsd/virtiofs-Force-VIRTIO_F_IOMMU_PLATFORM-feature-to-su.patch; \
+	        }; \
 	    [ ! -s "$${HOME}/.cargo/env" ] && \
 	        curl https://sh.rustup.rs -sSf | sh; \
 	fi

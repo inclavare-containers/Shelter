@@ -1,0 +1,26 @@
+From 985207299d953f0ee93d02a76fc17b85ec4c411b Mon Sep 17 00:00:00 2001
+From: Jia Zhang <zhang.jia@linux.alibaba.com>
+Date: Fri, 16 Aug 2024 20:16:33 +0800
+Subject: [PATCH] virtiofs: Force VIRTIO_F_IOMMU_PLATFORM feature to support
+ CVM
+
+Signed-off-by: Jia Zhang <zhang.jia@linux.alibaba.com>
+---
+ src/main.rs | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/main.rs b/src/main.rs
+index ca36055..3165544 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -451,6 +451,7 @@ impl<F: FileSystem + SerializableFileSystem + Send + Sync + 'static> VhostUserBa
+ 
+     fn features(&self) -> u64 {
+         1 << VIRTIO_F_VERSION_1
++            | 1 << VIRTIO_F_IOMMU_PLATFORM
+             | 1 << VIRTIO_RING_F_INDIRECT_DESC
+             | 1 << VIRTIO_RING_F_EVENT_IDX
+             | VhostUserVirtioFeatures::PROTOCOL_FEATURES.bits()
+-- 
+2.43.5
+
