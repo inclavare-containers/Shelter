@@ -723,11 +723,6 @@ stop() {
         sleep 1
     done
 
-    systemctl --user stop shelter_${IMAGE_ID}.service
-    for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
-        kill "$(cat ${f})"
-    done
-
     error "Shelter has been forcibly shut down"
 }
 
@@ -901,22 +896,33 @@ main() {
 }
 
 trap_handler() {
-    trap - SIGINT EXIT ERR
+    trap - SIGINT SIGTERM EXIT ERR
 
     local line_no="$1"
     local err=$2
 
-    debug "Cleaning up ..."
+    debug "Exiting ..."
 
     if [ $err -ne 0 ] && [ "$line_no" != "1" ]; then
         error "Error occurred on line $line_no, exit code: $err"
     fi
 
-    debug "Exiting"
+    debug "Cleaning up ..."
+
+    systemctl --user stop shelter_${IMAGE_ID}.service 2>/dev/null
+    for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
+        [ ! -f "$f" ] && continue;
+
+        kill "$(cat ${f})" 2>/dev/null
+        rm -f "${f}"
+        rm -f "${f/.pid/.sock}"
+    done
+
+    rm -f "${SHELTER_STAGE_DIR}/cid"
 
     exit $err
 }
 
-trap 'trap_handler $LINENO $?' SIGINT EXIT ERR
+trap 'trap_handler $LINENO $?' SIGINT SIGTERM EXIT ERR
 
 main "$@"
