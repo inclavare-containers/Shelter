@@ -192,8 +192,7 @@ else
 endif
 
 	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/mkosi" && \
-	  sudo cp -r libexec/mkosi/* "$(PREFIX)/libexec/shelter/mkosi" && \
-	  sudo ln -sfn "$(PREFIX)/libexec/shelter/mkosi/bin/mkosi" "$(PREFIX)/bin/mkosi"
+	  sudo cp -r libexec/mkosi/* "$(PREFIX)/libexec/shelter/mkosi"
 
 	# FIXIME: assume hygon platforms only support redhat-like system
 	@if lscpu | grep -q -o 'HygonGenuine'; then \
@@ -201,9 +200,9 @@ endif
 	    sudo install -m 0755 shelter.hygon.conf "$(CONFIG)"; \
 	fi
 ifeq ($(IS_DEBIAN), true)
-	@install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/bin"
+	@install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/libexec/shelter"
 else ifeq ($(IS_DEBIAN), false)
-	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/bin"
+	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
 endif
 
 ifeq ($(IS_APSARA), true)
@@ -212,13 +211,14 @@ endif
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
-	  sudo rm -f mkosi shelter; \
+	  sudo rm -f shelter; \
 	} || true
 
 	@sudo rm -rf "$(CONFIG_DIR)"
 	@sudo rm -f "$(CONFIG)"
 
 	@sudo rm -f /usr/local/sbin/hag
+	@sudo rm -rf "$(PREFIX)/libexec/shelter"
 
 test: # Run verify-signature demo with shelter
 	@./demos/verify-signature/gen-keypair.sh && \

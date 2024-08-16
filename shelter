@@ -2,6 +2,8 @@
 
 . /etc/shelter.d/00_logger
 
+SHELTER_BIN_DIR="/usr/local/libexec/shelter"
+
 SHELTER_CONF="/etc/shelter.conf"
 SHELTER_CONF_DIR="/etc/shelter.d"
 SHELTER_INITRD_CONF_DIR="${SHELTER_CONF_DIR}/initrd"
@@ -324,7 +326,7 @@ build() {
     if [ "$image_type" = "disk" ]; then
         debug "Building initrd image: ${SHELTER_INITRD}"
 
-        mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
+        $(SHELTER_BIN_DIR)/mkosi/bin/mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
           --postinst-script="${SHELTER_INITRD_CONF_DIR}/mkosi.postinst" \
           --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_INITRD})" \
           --extra-tree="${EXTRA_DIR}:/extra" \
@@ -382,7 +384,7 @@ build() {
     if [ "$image_type" = "initrd" ]; then
         debug "Building initrd image: ${SHELTER_INITRD}"
 
-        mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
+        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
           --build-script="${SHELTER_INITRD_CONF_DIR}/mkosi.build" \
           --finalize-script="${SHELTER_INITRD_CONF_DIR}/mkosi.finalize" \
           --postinst-script="${SHELTER_INITRD_CONF_DIR}/mkosi.postinst" \
@@ -400,7 +402,7 @@ build() {
 
         debug "Building Disk image: ${SHELTER_DISK}"
 
-        mkosi -f --debug -C "${SHELTER_DISK_CONF_DIR}" \
+        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi -f --debug -C "${SHELTER_DISK_CONF_DIR}" \
           --build-script="${SHELTER_DISK_CONF_DIR}/mkosi.build" \
           --finalize-script="${SHELTER_DISK_CONF_DIR}/mkosi.finalize" \
           --postinst-script="${SHELTER_DISK_CONF_DIR}/mkosi.postinst" \
@@ -562,7 +564,7 @@ start() {
 
         debug "host-guest sharing between $src and $dst"
 
-        virtiofsd \
+        ${SHELTER_BIN_DIR}/virtiofsd \
           --socket-path="${SHELTER_STAGE_DIR}/virtiofs-${virtiofs_nr}.sock" \
           --shared-dir "${src}" &
         store_stage "virtiofs-${virtiofs_nr}.pid" "$!"
@@ -759,7 +761,7 @@ exec() {
 }
 
 clean() {
-    mkosi clean
+    ${SHELTER_BIN_DIR}/mkosi/bin/mkosi clean
     rm -rf "${EXTRA_DIR}"
 }
 
