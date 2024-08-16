@@ -83,6 +83,7 @@ add_dir() {
 
 set_image_dir() {
     local image_id=${1-default}
+
     IMAGE_ID=${image_id}
     SHELTER_DEFAULT_STAGE="${IMAGE_ID}"
     SHELTER_STAGE_DIR="${SHELTER_RUNTIME_DIR}/${SHELTER_DEFAULT_STAGE}"
@@ -92,7 +93,8 @@ set_image_dir() {
     SHELTER_PASSPHRASE="${SHELTER_STAGE_DIR}/passphrase"
     SHELTER_IMAGE_CONF="${SHELTER_STAGE_DIR}/shelter.conf"
     EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
-    info "app's image id: $IMAGE_ID"
+
+    info "Image ID: $IMAGE_ID"
 }
 
 copy_file_and_dir_no_resolve_symlink() {
@@ -257,8 +259,8 @@ build() {
     done
 
  
-    if image_exists $image_id ;then 
-        warn "image exist, old image will be replaced"
+    if image_exists $image_id; then
+        warn "The image \"$image_id\" already exists. It will be replaced."
     fi
 
     set_image_dir ${image_id}
@@ -421,7 +423,7 @@ build() {
 
     if [ -s "/boot/vmlinuz-${kernel_version}" ]; then
         cp -f "/boot/vmlinuz-${kernel_version}" "${SHELTER_KERNEL}"
-        info "Build successful, image id: $IMAGE_ID"
+        info "Succeed to build the image \"$IMAGE_ID\""
         return 0
     else
         # Arch Linux doesn't have a versioned kernel image file
