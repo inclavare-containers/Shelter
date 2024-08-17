@@ -26,6 +26,7 @@ CONF="${SHELTER_STAGE_DIR}/build.conf"
 ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup")
 ESSENTIAL_FILES=()
 
+# Timeout for rcS getting started to listen vsock
 SHELTER_TIMEOUT=60
 
 # Record the commands to run in guest after parsing the parameters
@@ -96,7 +97,7 @@ set_image_dir() {
     SHELTER_IMAGE_CONF="${SHELTER_STAGE_DIR}/shelter.conf"
     EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
 
-    info "Image ID: $IMAGE_ID"
+    info "Using Image ID: $IMAGE_ID"
 }
 
 copy_file_and_dir_no_resolve_symlink() {
@@ -663,12 +664,12 @@ run() {
     for ((i=${wait_seconds}; i>0; i--))
     do
         if ! is-active; then
-            error "Failed to run shelter guest"
+            error "Failed to run shelter service"
             return 1
         fi
 
+        # Check whether the guest gets ready
         if socat /dev/null vsock-connect:${cid}:4321 1>&- 2>&-; then
-            # The guest is ready
             is_ready=1
             break
         fi
@@ -676,8 +677,8 @@ run() {
         sleep 1
     done
 
-    if [[ $is_ready -ne 1 ]]; then
-        error "Failed to run shelter guest"
+    if [ $is_ready -ne 1 ]; then
+        error "Failed to launch guest"
         stop
         return 1
     fi
@@ -686,7 +687,7 @@ run() {
         shift
     fi
 
-    debug "Run command in guest: '${COMMANDS}'"
+    debug "Run commands in guest: '${COMMANDS}'"
     exec ${COMMANDS}
 
     stop
@@ -720,6 +721,7 @@ stop() {
             debug "Shelter has been smoothly stopped"
             return 0
         fi
+
         sleep 1
     done
 
@@ -727,7 +729,7 @@ stop() {
 }
 
 exec() {
-    if [[ $1 == "--" ]]; then
+    if [ "$1" = "--" ]; then
         shift
     fi
 
