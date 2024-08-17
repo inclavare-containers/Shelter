@@ -484,6 +484,7 @@ config_qemu() {
 -accel kvm -m ${mem} -nographic -cpu host
 -kernel '${SHELTER_KERNEL}' -initrd '${SHELTER_INITRD}'
 -append '${kern_cmd}'
+-device virtio-rng-pci
 -device vhost-vsock-pci,guest-cid=${cid}
 -smp ${cpus} 
 EOF
