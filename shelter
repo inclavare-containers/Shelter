@@ -755,7 +755,7 @@ exec() {
     fi
 
     local cid="$(get_stage cid)"
-    echo "$@" | socat - vsock-connect:${cid}:4321
+    echo "$@" | socat -t 3600 - vsock-connect:${cid}:4321
 }
 
 clean() {

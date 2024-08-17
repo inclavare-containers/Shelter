@@ -7,4 +7,4 @@ $BUSYBOX --install -s /usr/bin/
 
 acpid
 
-socat vsock-listen:4321,reuseaddr,fork "exec:'xargs --no-run-if-empty -0 sh -c',stderr" &
+socat -t 3600 vsock-listen:4321,reuseaddr,fork "exec:'xargs --no-run-if-empty -0 sh -c',stderr" &
