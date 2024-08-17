@@ -120,6 +120,8 @@ copy_file_and_dir_no_resolve_symlink() {
         dst_path="$dst_path"/
     fi
 
+    debug "Copying ${src_path} -> ${EXTRA_DIR}${dst_path} ..."
+
     add_dir "$(dirname $dst_path)"
     rsync -ap --links "${src_path}" "${EXTRA_DIR}${dst_path}"
 }
@@ -144,6 +146,9 @@ copy_file_resolve_symlink() {
     if [ -L "$src_path" ]; then
         local target_file_path=$(realpath $1)
         copy_file_resolve_symlink $target_file_path
+
+        debug "Copying ${src_path} -> ${EXTRA_DIR}${dst_path} ..."
+
         add_dir $(dirname $dst_path)
         rsync -a --links "${src_path}" "${EXTRA_DIR}${dst_path}"
         return
@@ -151,6 +156,8 @@ copy_file_resolve_symlink() {
 
     # Check if file is regular
     if [ -f "$src_path" ]; then
+        debug "Copying ${src_path} -> ${EXTRA_DIR}${dst_path} ..."
+
         add_dir $(dirname $dst_path)
         cp -a "${src_path}" "${EXTRA_DIR}${dst_path}"
         return
