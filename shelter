@@ -120,6 +120,7 @@ copy_file_and_dir_no_resolve_symlink() {
         dst_path="$dst_path"/
     fi
 
+    add_dir "$(dirname $dst_path)"
     rsync -ap --links "${src_path}" "${EXTRA_DIR}${dst_path}"
 }
 
