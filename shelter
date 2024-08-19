@@ -26,6 +26,8 @@ SHELTER_IMAGE_CONF="${SHELTER_IMAGE_DIR}/shelter.conf"
 EXTRA_DIR="${SHELTER_IMAGE_DIR}/extra"
 CONF="${SHELTER_IMAGE_DIR}/build.conf"
 
+SHELTER_CLEAN_FLAG="false"
+
 ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup")
 ESSENTIAL_FILES=()
 
@@ -541,6 +543,12 @@ EOF
 }
 
 start() {
+    if is-active; then
+        error "the app ${IMAGE_ID} is already started"
+        SHELTER_CLEAN_FLAG="false"
+        exit 1;
+    fi
+
     if [ x"$(get_image_info image_type)" = x"" ]; then
         error "The file ${SHELTER_STAGE_DIR}/image_type is missing. You may need to run 'shelter build' first."
         exit 1
@@ -682,6 +690,7 @@ is-active() {
 }
 
 run() {
+    SHELTER_CLEAN_FLAG="true"
     start "$@"
 
     debug "The guest is booting"
@@ -734,6 +743,7 @@ status() {
 }
 
 stop() {
+    SHELTER_CLEAN_FLAG="true"
     if ! is-active; then
         exit 0;
     fi
@@ -940,8 +950,8 @@ trap_handler() {
         error "Error occurred on line $line_no, exit code: $err"
     fi
 
+    if [ ${SHELTER_CLEAN_FLAG} == "true" ]; then 
         debug "Cleaning up ..."
-
         systemctl --user stop shelter_${IMAGE_ID}.service 2>/dev/null
         for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
             [ ! -f "$f" ] && continue;
@@ -952,6 +962,7 @@ trap_handler() {
         done
 
         rm -f "${SHELTER_STAGE_DIR}/cid"
+    fi
 
     exit $err
 }
