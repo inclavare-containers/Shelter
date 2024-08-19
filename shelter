@@ -438,12 +438,16 @@ build() {
     fi
 
     store_image_info "image_type" "${image_type}"
+    store_image_info "initrd_hash" $(sha256sum ${SHELTER_IMAGE_DIR}/initrd |awk '{print substr($1, 1, 9)}')
+    store_image_info "initrd_size" `ls -l -h $(readlink -f ${SHELTER_IMAGE_DIR}/initrd)|awk '{print $5}'`
+    store_image_info "create_time" $(ls -l --time-style=+"%m-%d+%H:%M:%S" ${SHELTER_IMAGE_DIR}/initrd | awk '{print $6}')
 
     debug "Copying kernel: ${SHELTER_KERNEL}"
 
     if [ -s "/boot/vmlinuz-${kernel_version}" ]; then
         cp -f "/boot/vmlinuz-${kernel_version}" "${SHELTER_KERNEL}"
         info "Succeed to build the image \"$IMAGE_ID\""
+        store_image_info "kernel_hash" $(sha256sum ${SHELTER_IMAGE_DIR}/kernel | awk '{print substr($1, 1, 9)}')
         return 0
     else
         # Arch Linux doesn't have a versioned kernel image file
@@ -452,6 +456,7 @@ build() {
             if [[ "$image_version" == "$kernel_version" ]]; then
                 cp -f $kernel_image ./image.vmlinuz
                 info "Build successful, image id: $IMAGE_ID"
+                store_image_info "kernel_hash" $(sha256sum ${SHELTER_IMAGE_DIR}/kernel | awk '{print substr($1, 1, 9)}')
                 return 0
             fi
         done
@@ -807,26 +812,29 @@ show_images() {
     printf "%-12s | %-10s | %-12s | %-12s | %-10s | %-20s \n" "ID" "IMAGE_TYPE" "IMAGE_HASH" "KERNEL_HASH" "IMAGE_SIZE" "CREATED"
 
     for id in `ls -t ${SHELTER_DATA_DIR}/images`; do
-       image_dir=${SHELTER_DATA_DIR}/images/${id}
-       if [ -s ${image_dir}/image_type ];then
-            image_type=`cat ${image_dir}/image_type`
-       fi
+        SHELTER_IMAGE_DIR=${SHELTER_DATA_DIR}/images/${id}
+        if [ ! -d ${SHELTER_IMAGE_DIR}/tmp ]; then
+            mkdir -p ${SHELTER_IMAGE_DIR}/tmp
+            get_image_info image_type > ${SHELTER_IMAGE_DIR}/tmp/image_type &
+            get_image_info initrd_hash > ${SHELTER_IMAGE_DIR}/tmp/initrd_hash &
+            get_image_info kernel_hash > ${SHELTER_IMAGE_DIR}/tmp/kernel_hash &
+            get_image_info initrd_size > ${SHELTER_IMAGE_DIR}/tmp/initrd_size &
+            get_image_info create_time > ${SHELTER_IMAGE_DIR}/tmp/create_time &
+            wait
+        fi
 
-       if [ -s ${image_dir}/initrd ];then
-            initrd_hash=`sha1sum ${image_dir}/initrd |awk '{print substr($1, 1, 9)}'`
-            initrd_size=`ls -l -h $(readlink -f ${image_dir}/initrd)|awk '{print $5}'`
-            create_time=`ls -l --time-style=+"%m-%d+%H:%M:%S" ${image_dir}/initrd | awk '{print $6}'`
-       fi
+        image_type=`cat ${SHELTER_IMAGE_DIR}/tmp/image_type`
+        initrd_hash=`cat ${SHELTER_IMAGE_DIR}/tmp/initrd_hash`
+        kernel_hash=`cat ${SHELTER_IMAGE_DIR}/tmp/kernel_hash`
+        initrd_size=`cat ${SHELTER_IMAGE_DIR}/tmp/initrd_size`
+        create_time=`cat ${SHELTER_IMAGE_DIR}/tmp/create_time`
 
-       if [ -s ${image_dir}/kernel ];then
-            kernel_hash=`sha1sum ${image_dir}/kernel | awk '{print substr($1, 1, 9)}'`
-       fi 
 
-       if [ ! -z "$image_type" ] && [ ! -s ${image_dir}/initrd ] && [ ! -s ${image_dir}/kernel ];then
-            debug "Bad Image, miss some file"
-       else
-            printf "%-12s | %-10s | %-12s | %-12s | %-10s | %-20s \n" ${id} ${image_type} ${initrd_hash} ${kernel_hash} ${initrd_size} ${create_time}
-       fi
+        if [ -z "$image_type" ] || [ -z "$initrd_hash" ] || [ -z "$kernel_hash" ];then
+             debug "Bad Image, miss some file"
+        else
+             printf "%-12s | %-10s | %-12s | %-12s | %-10s | %-20s \n" ${id} ${image_type} ${initrd_hash} ${kernel_hash} ${initrd_size} ${create_time}
+        fi
     done
 }
 
