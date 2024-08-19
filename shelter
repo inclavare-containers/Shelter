@@ -14,14 +14,17 @@ IMAGE_ID="default"
 SHELTER_DEFAULT_STAGE="${IMAGE_ID}"
 SHELTER_RUNTIME_DIR="/var/run/shelter"
 SHELTER_STAGE_DIR="${SHELTER_RUNTIME_DIR}/${SHELTER_DEFAULT_STAGE}"
-SHELTER_INITRD="${SHELTER_STAGE_DIR}/initrd"
-SHELTER_KERNEL="${SHELTER_STAGE_DIR}/kernel"
-SHELTER_DISK="${SHELTER_STAGE_DIR}/disk"
-SHELTER_PASSPHRASE="${SHELTER_STAGE_DIR}/passphrase"
-SHELTER_IMAGE_CONF="${SHELTER_STAGE_DIR}/shelter.conf"
 
-EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
-CONF="${SHELTER_STAGE_DIR}/build.conf"
+SHELTER_DATA_DIR="/var/lib/shelter"
+SHELTER_IMAGE_DIR="${SHELTER_DATA_DIR}/images/${IMAGE_ID}"
+SHELTER_INITRD="${SHELTER_IMAGE_DIR}/initrd"
+SHELTER_KERNEL="${SHELTER_IMAGE_DIR}/kernel"
+SHELTER_DISK="${SHELTER_IMAGE_DIR}/disk"
+SHELTER_PASSPHRASE="${SHELTER_IMAGE_DIR}/passphrase"
+SHELTER_IMAGE_CONF="${SHELTER_IMAGE_DIR}/shelter.conf"
+
+EXTRA_DIR="${SHELTER_IMAGE_DIR}/extra"
+CONF="${SHELTER_IMAGE_DIR}/build.conf"
 
 ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup")
 ESSENTIAL_FILES=()
@@ -90,12 +93,14 @@ set_image_dir() {
     IMAGE_ID=${image_id}
     SHELTER_DEFAULT_STAGE="${IMAGE_ID}"
     SHELTER_STAGE_DIR="${SHELTER_RUNTIME_DIR}/${SHELTER_DEFAULT_STAGE}"
-    SHELTER_INITRD="${SHELTER_STAGE_DIR}/initrd"
-    SHELTER_KERNEL="${SHELTER_STAGE_DIR}/kernel"
-    SHELTER_DISK="${SHELTER_STAGE_DIR}/disk"
-    SHELTER_PASSPHRASE="${SHELTER_STAGE_DIR}/passphrase"
-    SHELTER_IMAGE_CONF="${SHELTER_STAGE_DIR}/shelter.conf"
-    EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
+    SHELTER_IMAGE_DIR="${SHELTER_DATA_DIR}/images/${IMAGE_ID}"
+    SHELTER_INITRD="${SHELTER_IMAGE_DIR}/initrd"
+    SHELTER_KERNEL="${SHELTER_IMAGE_DIR}/kernel"
+    SHELTER_DISK="${SHELTER_IMAGE_DIR}/disk"
+    SHELTER_PASSPHRASE="${SHELTER_IMAGE_DIR}/passphrase"
+    SHELTER_IMAGE_CONF="${SHELTER_IMAGE_DIR}/shelter.conf"
+
+    EXTRA_DIR="${SHELTER_IMAGE_DIR}/extra"
 
     info "Using Image ID: $IMAGE_ID"
 }
@@ -210,6 +215,10 @@ store_stage() {
     local name="$1"
     local val="$2"
 
+    if [ ! -d "${SHELTER_STAGE_DIR}" ]; then
+        mkdir -p "${SHELTER_STAGE_DIR}"
+    fi
+
     echo -n "${val}" > "${SHELTER_STAGE_DIR}/${name}"
 }
 
@@ -276,9 +285,7 @@ build() {
 
     set_image_dir ${image_id}
 
-    EXTRA_DIR="${SHELTER_STAGE_DIR}/extra"
     debug "Gather files to be copied and copy into $EXTRA_DIR"
-
     rm -rf "$EXTRA_DIR"
 
     if [ ! -d "$EXTRA_DIR" ]; then
@@ -337,7 +344,7 @@ build() {
 
         $(SHELTER_BIN_DIR)/mkosi/bin/mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
           --postinst-script="${SHELTER_INITRD_CONF_DIR}/mkosi.postinst" \
-          --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_INITRD})" \
+          --output-dir="${SHELTER_IMAGE_DIR}}" --output="$(basename ${SHELTER_INITRD})" \
           --extra-tree="${EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
           build
@@ -397,7 +404,7 @@ build() {
           --build-script="${SHELTER_INITRD_CONF_DIR}/mkosi.build" \
           --finalize-script="${SHELTER_INITRD_CONF_DIR}/mkosi.finalize" \
           --postinst-script="${SHELTER_INITRD_CONF_DIR}/mkosi.postinst" \
-          --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_INITRD})" \
+          --output-dir="${SHELTER_IMAGE_DIR}" --output="$(basename ${SHELTER_INITRD})" \
           --extra-tree="${EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
           build
@@ -415,7 +422,7 @@ build() {
           --build-script="${SHELTER_DISK_CONF_DIR}/mkosi.build" \
           --finalize-script="${SHELTER_DISK_CONF_DIR}/mkosi.finalize" \
           --postinst-script="${SHELTER_DISK_CONF_DIR}/mkosi.postinst" \
-          --output-dir="${SHELTER_STAGE_DIR}" --output="$(basename ${SHELTER_DISK})" \
+          --output-dir="${SHELTER_IMAGE_DIR}" --output="$(basename ${SHELTER_DISK})" \
           --extra-tree="${EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
           --passphrase="${SHELTERPASS}" \
@@ -428,7 +435,7 @@ build() {
         fi
     fi
 
-    store_stage "image_type" "${image_type}"
+    store_image_info "image_type" "${image_type}"
 
     debug "Copying kernel: ${SHELTER_KERNEL}"
 
@@ -450,6 +457,21 @@ build() {
 
     error "Error: can't find the currently active kernel from /boot/"
     exit 1
+}
+
+store_image_info() {
+    key="$1"
+    value="$2"
+
+    if [ ! -s ${SHELTER_IMAGE_DIR}/image_info.toml ];then 
+        touch ${SHELTER_IMAGE_DIR}/image_info.toml
+    fi 
+    toml set  ${key} ${value} --toml-path=${SHELTER_IMAGE_DIR}/image_info.toml
+}
+
+get_image_info() {
+    key="$1"
+    toml get --toml-path ${SHELTER_IMAGE_DIR}/image_info.toml "${key}"
 }
 
 get_conf() {
@@ -510,7 +532,7 @@ EOF
         opts+=" -object memory-backend-file,id=mem,size=${mem},mem-path=/dev/shm,share=on -numa node,memdev=mem"
     fi
 
-    local image_type="$(get_stage image_type)"
+    local image_type="$(get_image_info image_type)"
     if [ x"$image_type" = x"disk" ]; then
         opts+=" -drive file='${SHELTER_DISK}',format=raw,if=virtio"
     fi
@@ -519,7 +541,7 @@ EOF
 }
 
 start() {
-    if [ x"$(get_stage image_type)" = x"" ]; then
+    if [ x"$(get_image_info image_type)" = x"" ]; then
         error "The file ${SHELTER_STAGE_DIR}/image_type is missing. You may need to run 'shelter build' first."
         exit 1
     fi
@@ -625,7 +647,7 @@ start() {
 
     debug "The guest is started at CID ${cid}"
 
-    if [ x"$(get_stage image_type)" != x"disk" ]; then
+    if [ x"$(get_image_info image_type)" != x"disk" ]; then
         return 0
     fi
 
@@ -774,8 +796,8 @@ clean() {
 show_images() {
     printf "%-12s | %-10s | %-12s | %-12s | %-10s | %-20s \n" "ID" "IMAGE_TYPE" "IMAGE_HASH" "KERNEL_HASH" "IMAGE_SIZE" "CREATED"
 
-    for id in `ls -t ${SHELTER_RUNTIME_DIR}`; do
-       image_dir=${SHELTER_RUNTIME_DIR}/${id}
+    for id in `ls -t ${SHELTER_DATA_DIR}/images`; do
+       image_dir=${SHELTER_DATA_DIR}/images/${id}
        if [ -s ${image_dir}/image_type ];then
             image_type=`cat ${image_dir}/image_type`
        fi
@@ -800,7 +822,7 @@ show_images() {
 
 image_exists() {
     local image_id=$1
-    if [ -s ${SHELTER_RUNTIME_DIR}/${image_id}/initrd ];then 
+    if [ -s ${SHELTER_DATA_DIR}/images/${image_id}/initrd ];then 
         return 0
     else 
         return 1 
@@ -918,18 +940,18 @@ trap_handler() {
         error "Error occurred on line $line_no, exit code: $err"
     fi
 
-    debug "Cleaning up ..."
+        debug "Cleaning up ..."
 
-    systemctl --user stop shelter_${IMAGE_ID}.service 2>/dev/null
-    for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
-        [ ! -f "$f" ] && continue;
+        systemctl --user stop shelter_${IMAGE_ID}.service 2>/dev/null
+        for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
+            [ ! -f "$f" ] && continue;
 
-        kill "$(cat ${f})" 2>/dev/null
-        rm -f "${f}"
-        rm -f "${f/.pid/.sock}"
-    done
+            kill "$(cat ${f})" 2>/dev/null
+            rm -f "${f}"
+            rm -f "${f/.pid/.sock}"
+        done
 
-    rm -f "${SHELTER_STAGE_DIR}/cid"
+        rm -f "${SHELTER_STAGE_DIR}/cid"
 
     exit $err
 }
