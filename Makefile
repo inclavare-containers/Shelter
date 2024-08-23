@@ -64,7 +64,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	    libcap-ng-devel \
 	    diffutils rsync sed systemd socat +podman-docker \
 	    +busybox kmod bubblewrap qemu-kvm zstd glib2-devel \
-	    tar openssl
+	    tar openssl dhcp-client
 
 ifeq ($(IS_APSARA), true)
 	@$(MAKE) _depend_apsara
@@ -116,7 +116,7 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	    libseccomp-dev libcap-ng-dev \
 	    diffutils rsync libc-bin sed systemd socat \
 	    busybox-static kmod bubblewrap qemu-system-x86 zstd \
-	    tar openssl
+	    tar openssl isc-dhcp-client
 
 	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
