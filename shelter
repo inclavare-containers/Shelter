@@ -28,7 +28,7 @@ CONF="${SHELTER_IMAGE_DIR}/build.conf"
 
 SHELTER_CLEAN_FLAG="false"
 
-ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup")
+ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup" "dhclient" "dhclient-script")
 ESSENTIAL_FILES=()
 
 # Timeout for rcS getting started to listen vsock
@@ -296,6 +296,7 @@ build() {
 
     local binaries=()
     local files=()
+    local packages=()
     local src_dir="$(pwd)"
 
     if [ -s "$CONF" ]; then
@@ -319,6 +320,11 @@ build() {
                 # Split into an array and add to files array
                 IFS=' ' read -r -a file_array <<< "$line"
                 files+=("${file_array[@]}")
+            elif [[ $line == package=* ]];then
+                 line=$(echo "$line" | sed 's/^package=//;s/[()]//g')
+                 # Split into an array and add to packages array
+                 IFS=' ' read -r -a package_array <<< "$line"
+                 packages+=("${package_array[@]}")
             fi
         done < "$CONF"
 
@@ -326,6 +332,11 @@ build() {
         # directory where the config file resides.
         src_dir="$(dirname $CONF)"
     fi
+
+    # convert the packages to mkosi's parameters
+    for i in "${!packages[@]}"; do
+        packages[i]="--package=${packages[i]}"   
+    done
 
     local src=""
     local dst=""
@@ -349,6 +360,7 @@ build() {
           --output-dir="${SHELTER_IMAGE_DIR}}" --output="$(basename ${SHELTER_INITRD})" \
           --extra-tree="${EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
+          --package="${packages[@]}" \
           build
 
         if [ $? -ne 0 ]; then
@@ -409,7 +421,8 @@ build() {
           --output-dir="${SHELTER_IMAGE_DIR}" --output="$(basename ${SHELTER_INITRD})" \
           --extra-tree="${EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
-          build
+          "${packages[@]}" \
+          build     
 
         if [ $? -ne 0 ]; then
             error "Error: failed to build initrd image with mkosi"
@@ -502,6 +515,7 @@ config_qemu() {
     local virtiofs_nr=$6
     local cpus="$7"
     local firmware="$8"
+    local ports="$9"
 
     if [ x"${bin}" = x"" ]; then
         bin="qemu-system-x86_64"
@@ -544,6 +558,27 @@ EOF
         opts+=" -drive file='${SHELTER_DISK}',format=raw,if=virtio"
     fi
 
+# port forwarding
+    local port_array=()
+    local port_maps
+    IFS=' ' read -ra port_array <<< "$ports"
+    for p in "${port_array[@]}"; do
+        local host
+        local guest
+
+        if [[ "$p" == *:* ]]; then
+            IFS=':' read -r host guest <<< "$p"
+        else
+            host="$p"
+            guest="$p"
+        fi
+        port_maps+="hostfwd=tcp::$host-:$guest," 
+    done
+    if [ ! -z "${port_maps}" ];then
+        port_maps="${port_maps%,}"
+        opts+=" -device virtio-net-pci,netdev=net0 -netdev user,id=net0,${port_maps}"
+    fi
+
     echo -n "${bin} ${opts} ${extra_opts}"
 }
 
@@ -571,6 +606,7 @@ start() {
 
     local opts=()
     local volumes=()
+    local ports=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -v|--volume)
@@ -579,6 +615,14 @@ start() {
                     exit 1
                 fi
                 volumes+=("$2")
+                shift
+                ;;
+            -p|--port)
+                if [ -z "$2" ]; then
+                    error "Error: -p/--port requires a value." >&2
+                    exit 1
+                fi
+                ports+=("$2")
                 shift
                 ;;
             *)
@@ -645,7 +689,7 @@ start() {
            cpus="$(get_image_conf cpus)"
         fi
 
-        cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}" "${opts}" "${virtiofs_nr}" "${cpus}" "${firmware}")"
+        cmd="$(config_qemu "${bin}" "${mem}" "${kern_cmdline}" "${cid}" "${opts}" "${virtiofs_nr}" "${cpus}" "${firmware}" "${ports[*]}")"
     fi
 
     debug "qemu command: $cmd"
@@ -813,7 +857,7 @@ show_images() {
 
     for id in `ls -t ${SHELTER_DATA_DIR}/images`; do
         SHELTER_IMAGE_DIR=${SHELTER_DATA_DIR}/images/${id}
-        if [ ! -d ${SHELTER_IMAGE_DIR}/tmp ]; then
+        if [ ! -d "${SHELTER_IMAGE_DIR}/tmp" ]; then
             mkdir -p ${SHELTER_IMAGE_DIR}/tmp
             get_image_info image_type > ${SHELTER_IMAGE_DIR}/tmp/image_type &
             get_image_info initrd_hash > ${SHELTER_IMAGE_DIR}/tmp/initrd_hash &
@@ -840,7 +884,7 @@ show_images() {
 
 image_exists() {
     local image_id=$1
-    if [ -s ${SHELTER_DATA_DIR}/images/${image_id}/initrd ];then 
+    if [ -s "${SHELTER_DATA_DIR}/images/${image_id}/initrd" ];then 
         return 0
     else 
         return 1 

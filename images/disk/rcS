@@ -8,3 +8,13 @@ $BUSYBOX --install -s /usr/bin/
 acpid
 
 socat -t 3600 vsock-listen:4321,reuseaddr,fork "exec:'xargs --no-run-if-empty -0 sh -c',stderr" &
+
+# try to config network
+if [ -x /usr/sbin/dhclient ];then
+    /usr/sbin/dhclient
+fi
+
+# start the other service
+for script in $(find /etc/init.d -maxdepth 1 -type f -perm /111 ! -name rcS); do
+    $script start
+done

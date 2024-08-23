@@ -150,3 +150,11 @@ DEBUG=3
 ```shell
 shelter run -v /root/dir0:/mnt/dir0 -v /root/dir1:/mnt/dir1 ls /mnt/dir0 /mnt/dir1
 ```
+
+### 端口映射
+
+通过指定-p选项可以映射guest上的端口到host上：
+
+```shell 
+shelter run -p 8080:80 -p 8443:443
+```

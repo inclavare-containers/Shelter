@@ -31,3 +31,6 @@ libexec/mkosi
 
 # Ignore the local virtiofsd clone
 virtiofsd/
+
+# Ignore the ide's cache
+.vscode
