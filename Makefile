@@ -260,23 +260,23 @@ test: # Run verify-signature demo with shelter
 	@./demos/verify-signature/gen-keypair.sh && \
 	  ./demos/verify-signature/prepare-payload.sh
 
-	@echo -e "\033[1;31mRunning the DEMO verify-signature at host ...\033[0m"
+	@echo -e "\033[1;31mRunning the DEMO verify-signature on host ...\033[0m"
 	@./demos/verify-signature/verifier.sh \
 	  ./demos/verify-signature/keys/public_key.pem \
 	  ./demos/verify-signature/payload/archive.tar.gz.sig \
 	  ./demos/verify-signature/payload/archive.tar.gz
 
-	@echo -e "\033[1;31mRunning the DEMO verify-signature at shelter guest ...\033[0m" 
+	@echo -e "\033[1;31mRunning the DEMO verify-signature in shelter guest ...\033[0m"
 	@./shelter build -c ./demos/verify-signature/build.conf && \
 	  ./shelter run verifier.sh \
 	    /keys/public_key.pem \
 	    /payload/archive.tar.gz.sig \
 	    /payload/archive.tar.gz
 
-	@echo -e "\033[1;31mRunning the DEMO mount at host ...\033[0m"
+	@echo -e "\033[1;31mRunning the DEMO mount on host ...\033[0m"
 	@ls -l demos libexec
 
-	@echo -e "\033[1;31mRunning the DEMO mount at shelter guest ...\033[0m"
+	@echo -e "\033[1;31mRunning the DEMO mount in shelter guest ...\033[0m"
 	@./shelter run -v demos:/root/demos -v libexec:/root/libexec \
 	  ls -l /root/demos /root/libexec
 
