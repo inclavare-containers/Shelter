@@ -355,12 +355,13 @@ build() {
     if [ "$image_type" = "disk" ]; then
         debug "Building initrd image: ${SHELTER_INITRD}"
 
-        $(SHELTER_BIN_DIR)/mkosi/bin/mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
+        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
           --postinst-script="${SHELTER_INITRD_CONF_DIR}/mkosi.postinst" \
           --output-dir="${SHELTER_IMAGE_DIR}}" --output="$(basename ${SHELTER_INITRD})" \
           --extra-tree="${EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
           --package="${packages[@]}" \
+          --extra-search-path="${SHELTER_BIN_DIR}/systemd/bin" \
           build
 
         if [ $? -ne 0 ]; then
@@ -440,8 +441,9 @@ build() {
           --output-dir="${SHELTER_IMAGE_DIR}" --output="$(basename ${SHELTER_DISK})" \
           --extra-tree="${EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
-          --passphrase="${SHELTERPASS}" \
+          --passphrase="${SHELTER_PASSPHRASE}" \
           --repart-dir="${SHELTER_DISK_CONF_DIR}/mkosi.repart" \
+          --extra-search-path="${SHELTER_BIN_DIR}/systemd/bin" \
           build
 
         if [ $? -ne 0 ]; then
