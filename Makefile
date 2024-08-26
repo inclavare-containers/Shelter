@@ -64,7 +64,14 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	    libcap-ng-devel \
 	    diffutils rsync sed systemd socat +podman-docker \
 	    +busybox kmod bubblewrap qemu-kvm zstd glib2-devel \
-	    tar openssl dhcp-client
+	    tar openssl dhcp-client \
+		gcc make autoconf \
+		automake gettext-devel pkgconfig \
+		openssl-devel popt-devel device-mapper-devel \
+		libuuid-devel json-c-devel libblkid-devel \
+		findutils libtool libssh-devel \
+		gperf libcap-devel cmake \
+		libmount-devel libfdisk-devel meson
 
 ifeq ($(IS_APSARA), true)
 	@$(MAKE) _depend_apsara
@@ -86,6 +93,14 @@ endif
 	        }; \
 	    [ ! -s "$${HOME}/.cargo/env" ] && \
 	        curl https://sh.rustup.rs -sSf | sh; \
+	fi
+
+	if [ ! -x "/usr/bin/systemd-repart" -o ! -x "/usr/bin/systemd-cryptsetup" ]; then \
+		git clone https://gitlab.com/cryptsetup/cryptsetup.git -b v2.7.4 --depth=1; \
+		mkdir libexec/cryptsetup; \
+		pip3 install jinja2; \
+		git clone https://github.com/systemd/systemd.git -b v256.5 --depth=1; \
+		mkdir libexec/systemd; \
 	fi
 
 ifeq ($(IS_APSARA), false)
@@ -157,6 +172,19 @@ else ifeq ($(IS_DEBIAN), false)
 	      cp -f target/release/virtiofsd ../libexec/redhat; \
 	fi
 endif
+	if [ -d "systemd" -a -d "cryptsetup" ]; then \
+		cd cryptsetup && ./autogen.sh && \
+		./configure --prefix=$(shell realpath -m libexec/cryptsetup) --disable-asciidoc && \
+		make && make install; \
+		cd ../systemd && \
+		export PKG_CONFIG_PATH=$(shell realpath -m libexec/cryptsetup/lib/pkgconfig) && \
+		meson setup --auto-features=disabled -Drepart=enabled \
+		-Dlibcryptsetup=enabled -Dfdisk=enabled -Dblkid=enabled \
+		-Dc_args="-I$(shell realpath -m libexec/cryptsetup/include)" \
+		--prefix="$(PREFIX)/libexec/shelter/systemd" \
+		build && \
+		DESTDIR="$(shell realpath -m libexec/systemd)" meson install -C build; \
+	fi
 
 clean: # Clean the build artifacts
 
@@ -209,6 +237,9 @@ ifeq ($(IS_DEBIAN), true)
 else ifeq ($(IS_DEBIAN), false)
 	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
 endif
+
+	@cp -rp libexec/systemd/$(PREFIX)/libexec/shelter/systemd $(PREFIX)/libexec/shelter
+	@cp -P libexec/cryptsetup/lib/*so* $(PREFIX)/libexec/shelter/systemd/lib64/systemd/
 
 ifeq ($(IS_APSARA), true)
 	@$(MAKE) _install_apsara

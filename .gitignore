@@ -34,3 +34,11 @@ virtiofsd/
 
 # Ignore the ide's cache
 .vscode
+
+# Ignore the local systemd clone
+systemd
+libexec/systemd
+
+# Ignore the local cryptsetup clone
+cryptsetup
+libexec/cryptsetup
