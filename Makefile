@@ -61,7 +61,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	sudo true && \
 	  install_pkg coreutils git sudo gawk grep +python3.11 python3-pip \
 	    python3-pysocks which util-linux cryptsetup curl libseccomp-devel \
-	    libcap-ng-devel \
+	    libcap-ng-devel automake libtool \
 	    diffutils rsync sed systemd socat +podman-docker \
 	    +busybox kmod bubblewrap qemu-kvm zstd glib2-devel \
 	    tar openssl dhcp-client \
@@ -82,7 +82,7 @@ endif
 
 	@if [ ! -x "libexec/redhat/virtiofsd" ]; then \
 	    [ ! -d "virtiofsd" ] && \
-	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1; \
+	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1 --depth=1; \
 	        cd virtiofsd && { \
 	            git config user.name "shelter-dev"; \
 	            git config user.email "shelter-dev"; \
@@ -92,16 +92,17 @@ endif
 	        curl https://sh.rustup.rs -sSf | sh; \
 	fi
 
-	if [ ! -x "/usr/bin/systemd-repart" -o ! -x "/usr/bin/systemd-cryptsetup" ]; then \
-		git clone https://gitlab.com/cryptsetup/cryptsetup.git -b v2.7.4 --depth=1; \
-		mkdir libexec/cryptsetup; \
-		pip3 install jinja2; \
-		git clone https://github.com/systemd/systemd.git -b v256.5 --depth=1; \
-		mkdir libexec/systemd; \
+	if [ ! -x "libexec/redhat/systemd-repart" -o ! -x "libexec/redhat/systemd-cryptsetup" ]; then \
+	    [ ! -d "cryptsetup" ] && { \
+	        git clone https://gitlab.com/cryptsetup/cryptsetup.git -b v2.7.4 --depth=1; \
+	    } || true; \
+	    [ ! -d "systemd" ] && { \
+	        git clone https://github.com/systemd/systemd.git -b v256.5 --depth=1; \
+	    } || true; \
 	fi
 
 ifeq ($(IS_APSARA), false)
-	@sudo pip3 install toml-cli --proxy=$(HTTPS_PROXY)
+	@sudo pip3 install toml-cli jinja2 --proxy=$(HTTPS_PROXY)
 endif
 
 _depend_debian: # Install the build and runtime dependencies on debian-like system
@@ -169,6 +170,7 @@ else ifeq ($(IS_DEBIAN), false)
 	      cp -f target/release/virtiofsd ../libexec/redhat; \
 	fi
 endif
+
 	if [ -d "systemd" -a -d "cryptsetup" ]; then \
 		cd cryptsetup && ./autogen.sh && \
 		./configure --prefix=$(shell realpath -m libexec/cryptsetup) --disable-asciidoc && \
@@ -239,6 +241,8 @@ endif
 
 	@cp -rp libexec/systemd/$(PREFIX)/libexec/shelter/systemd $(PREFIX)/libexec/shelter
 	@cp -P libexec/cryptsetup/lib/*so* $(PREFIX)/libexec/shelter/systemd/lib64/systemd/
+	#@install -m 0755 libexec/redhat/systemd-repart "$(PREFIX)/libexec/shelter"
+	#@install -m 0755 libexec/redhat/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter"
 
 ifeq ($(IS_APSARA), true)
 	@$(MAKE) _install_apsara

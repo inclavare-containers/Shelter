@@ -27,18 +27,16 @@ binary
 vars.mk
 
 # Ignore the local mkosi clone
-libexec/mkosi
+libexec/mkosi/
 
 # Ignore the local virtiofsd clone
 virtiofsd/
 
-# Ignore the ide's cache
-.vscode
-
 # Ignore the local systemd clone
-systemd
-libexec/systemd
+systemd/
 
 # Ignore the local cryptsetup clone
-cryptsetup
-libexec/cryptsetup
+cryptsetup/
+
+# Ignore the ide's cache
+.vscode
