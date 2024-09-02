@@ -11,18 +11,24 @@ mount -t sysfs sysfs /sys
 mkdir /dev/pts
 mount -t devpts devpts /dev/pts
 
-if [ -e /proc/sys/kernel/hotplug ]; then
-    echo `which mdev` > /proc/sys/kernel/hotplug
-fi
-mdev -d || mdev -s
-
-/usr/bin/modprobe -a vhost_vsock vmw_vsock_virtio_transport
+/usr/bin/modprobe -a virtio virtio_blk virtio_pci virtio_net dm_crypt vhost_vsock vmw_vsock_virtio_transport
 
 find /sys/ -name modalias -print0 | \
     xargs -0 sort -u | \
     tr '\n' '\0' | \
     xargs -0 /usr/bin/modprobe -abq
 
-acpid
+if [ -e /proc/sys/kernel/hotplug ]; then
+    echo `which mdev` > /proc/sys/kernel/hotplug
+fi
+mdev -d || mdev -s
 
-socat -t 3600 vsock-listen:4321,reuseaddr,fork "exec:'xargs --no-run-if-empty -0 sh -c',stderr" &
+socat vsock-listen:4321 "system:'cryptsetup open -d - /dev/vda1 root',nofork"
+
+mount -t ext4 /dev/mapper/root /mnt
+
+mount -o move /sys /mnt/sys
+mount -o move /proc /mnt/proc
+mount -o move /dev /mnt/dev
+
+exec switch_root /mnt /init

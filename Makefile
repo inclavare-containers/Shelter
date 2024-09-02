@@ -213,6 +213,8 @@ install: # Install the build artifacts
 	      "$${dest}"; \
 	}
 
+	@sudo install -D -m 0755 images/disk/init $(CONFIG_DIR)/disk
+
 	@sudo install -D -m 0755 shelter "$(PREFIX)/bin"
 
 ifeq ($(IS_DEBIAN), true)
