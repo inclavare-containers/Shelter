@@ -18,10 +18,17 @@ echo "ARTIFACTDIR: $ARTIFACTDIR"
 rsync -v --checksum --links --info=skip2 --recursive \
   --keep-dirlinks $BUILDROOT/extra/* $BUILDROOT/
 
-cp -f ./init $BUILDROOT/init
-
 BUSYBOX="$BUILDROOT/usr/bin/busybox"
 [ ! -x "$BUSYBOX" ] && BUSYBOX="$BUILDROOT/usr/sbin/busybox"
+
+if [ "$STAGE" = "CPIO" ]; then
+  cp -f ./init $BUILDROOT/init
+elif [ "$STAGE" = "DISK" ]; then
+  ln -srf "$BUSYBOX" "$BUILDROOT/init"
+else
+  echo "Environment STAGE is unset"
+  exit 1
+fi
 
 ln -srf "$BUSYBOX" "$BUILDROOT/bin/sh"
 ln -srf "$BUSYBOX" "$BUILDROOT/usr/bin/true"
