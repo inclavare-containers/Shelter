@@ -11,6 +11,8 @@ if [ -z "$MKOSI_INTERPRETER" ]; then
         MKOSI_INTERPRETER=python3
     elif command -v python3.9 >/dev/null; then
         MKOSI_INTERPRETER=python3.9
+    elif command -v python3.11 >/dev/null; then
+        MKOSI_INTERPRETER=python3.11
     else
         echo "mkosi needs python 3.9 or newer (found $(python3 --version))"
         exit 1

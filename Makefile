@@ -77,9 +77,6 @@ ifeq ($(IS_APSARA), true)
 	@$(MAKE) _depend_apsara
 endif
 
-	# Work around the python 3.6 lower than the requirement from mkosi
-	@sudo ln -sfn `which python3.11` `which python3`
-
 	# Work around mkosi for /usr/lib/os-release. See 1149444ef for the details
 	@sudo ln -sfn /etc/os-release /usr/lib/os-release
 
