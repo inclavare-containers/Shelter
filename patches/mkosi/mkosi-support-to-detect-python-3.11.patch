@@ -1,0 +1,26 @@
+From 295a7a7788ced4ad1d477b77eb2730a787bc81fa Mon Sep 17 00:00:00 2001
+From: Jia Zhang <zhang.jia@linux.alibaba.com>
+Date: Mon, 2 Sep 2024 19:14:58 +0800
+Subject: [PATCH] mkosi: support to detect python 3.11
+
+Signed-off-by: Jia Zhang <zhang.jia@linux.alibaba.com>
+---
+ bin/mkosi | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/bin/mkosi b/bin/mkosi
+index 8a9c3a95..ce8f4d85 100755
+--- a/bin/mkosi
++++ b/bin/mkosi
+@@ -11,6 +11,8 @@ if [ -z "$MKOSI_INTERPRETER" ]; then
+         MKOSI_INTERPRETER=python3
+     elif command -v python3.9 >/dev/null; then
+         MKOSI_INTERPRETER=python3.9
++    elif command -v python3.11 >/dev/null; then
++        MKOSI_INTERPRETER=python3.11
+     else
+         echo "mkosi needs python 3.9 or newer (found $(python3 --version))"
+         exit 1
+-- 
+2.41.0
+
