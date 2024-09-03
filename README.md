@@ -37,7 +37,7 @@ Shelter是一个将应用沙箱化的启动器。
 
 4. 构建shelter镜像
     ~~~sh
-    shelter build -t <image_id>
+    shelter build -t $image_id
     ~~~
 
     > image_id 用于设置镜像的id， 默认为default， 注意：shelter会覆盖相同id的镜像
@@ -49,23 +49,23 @@ Shelter是一个将应用沙箱化的启动器。
 
 6. 直接运行shelter镜像中的指定命令
     ~~~sh
-    shelter run <image_id> cat /proc/cmdline
+    shelter run $image_id cat /proc/cmdline
     ~~~
 
     也可以分步执行：
     - 创建shelter实例
       ~~~sh
-      shelter <image_id> start
+      shelter $image_id start
       ~~~
 
     - 在创建的shelter实例中运行镜像中的指定命令
       ~~~sh
-      shelter <image_id> exec cat /proc/cmdline
+      shelter $image_id exec cat /proc/cmdline
       ~~~
 
     - 停止shelter实例
       ~~~sh
-      shelter <image_id> stop
+      shelter $image_id stop
       ~~~
     > image_id 为需要启动的image的id，默认为default 
 
@@ -123,12 +123,12 @@ firmware = "/usr/share/edk2/ovmf/OVMF_CODE.cc"
 opts = "-object sev-guest,id=sev0,policy=0x1,cbitpos=47,reduced-phys-bits=5 -machine q35,memory-encryption=sev0"
 ```
 
-下面是一个镜像配置(./shelter.image.conf)的示例
+下面是一个镜像配置(./shelter.image.conf)的示例:
 ```
 mem = "8G"
 cpus = "4"
 ```
-目前只支持`内存`和`cpu`数的定制
+目前只支持`内存`和`cpu`数的定制。
 
 ### 调试
 
@@ -148,7 +148,7 @@ DEBUG=3
 通过指定-v选项可以将host上的目录透传给guest使用：
 
 ```shell
-shelter run -v /root/dir0:/mnt/dir0 -v /root/dir1:/mnt/dir1 ls /mnt/dir0 /mnt/dir1
+shelter run default -v /root/dir0:/mnt/dir0 -v /root/dir1:/mnt/dir1 ls /mnt/dir0 /mnt/dir1
 ```
 
 ### 端口映射
@@ -156,5 +156,5 @@ shelter run -v /root/dir0:/mnt/dir0 -v /root/dir1:/mnt/dir1 ls /mnt/dir0 /mnt/di
 通过指定-p选项可以映射guest上的端口到host上：
 
 ```shell 
-shelter run -p 8080:80 -p 8443:443
+shelter run default -p 8080:80 -p 8443:443
 ```
