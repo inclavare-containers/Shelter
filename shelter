@@ -28,7 +28,7 @@ CONF="${SHELTER_IMAGE_DIR}/build.conf"
 
 SHELTER_CLEAN_FLAG="false"
 
-ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup" "dhclient" "dhclient-script")
+ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup")
 ESSENTIAL_FILES=()
 
 # Timeout for rcS getting started to listen vsock

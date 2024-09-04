@@ -64,7 +64,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	    libcap-ng-devel automake libtool \
 	    diffutils rsync sed systemd socat +podman-docker \
 	    +busybox kmod bubblewrap qemu-kvm zstd glib2-devel \
-	    tar openssl dhcp-client \
+	    tar openssl \
 		gcc make autoconf \
 		automake gettext-devel pkgconfig \
 		openssl-devel popt-devel device-mapper-devel \
@@ -129,7 +129,7 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	    libseccomp-dev libcap-ng-dev \
 	    diffutils rsync libc-bin sed systemd socat \
 	    busybox-static kmod bubblewrap qemu-system-x86 zstd \
-	    tar openssl isc-dhcp-client
+	    tar openssl
 
 	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
@@ -197,6 +197,7 @@ install: # Install the build artifacts
 	            sudo install -m 0755 "images/conf/power" "$${dest}/conf"; \
 	            sudo install -m 0644 "images/conf/acpid.conf" "$${dest}/conf"; \
 	            sudo install -m 0644 "images/conf/blacklist.conf" "$${dest}/conf"; \
+	            sudo install -m 0755 "images/conf/default.script" "$${dest}/conf"; \
 	        }; \
 	        cd images/$${d}; \
 	        sudo install -m 0644 "mkosi.conf" "$${dest}"; \
