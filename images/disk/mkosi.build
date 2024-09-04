@@ -25,8 +25,10 @@ mkdir -p $DESTDIR/etc/init.d
 mkdir -p $DESTDIR/etc/acpi
 mkdir -p $DESTDIR/etc/modprobe.d
 mkdir -p $DESTDIR/usr/bin/
+mkdir -p $DESTDIR/usr/share/udhcpc
 
 cp rcS $DESTDIR/etc/init.d/
 cp ./conf/acpid.conf $DESTDIR/etc/
 cp ./conf/power $DESTDIR/etc/acpi/
 cp ./conf/blacklist.conf $DESTDIR/etc/modprobe.d/
+cp ./conf/default.script  $DESTDIR/usr/share/udhcpc/
