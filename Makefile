@@ -92,7 +92,7 @@ endif
 	        curl https://sh.rustup.rs -sSf | sh; \
 	fi
 
-	if [ ! -x "libexec/redhat/systemd-repart" -o ! -x "libexec/redhat/systemd-cryptsetup" ]; then \
+	@if [ ! -x "libexec/redhat/systemd/bin/systemd-repart" -o ! -x "libexec/redhat/systemd/bin/systemd-cryptsetup" ]; then \
 	    [ ! -d "cryptsetup" ] && { \
 	        git clone https://gitlab.com/cryptsetup/cryptsetup.git -b v2.7.4 --depth=1; \
 	    } || true; \
@@ -171,7 +171,7 @@ else ifeq ($(IS_DEBIAN), false)
 	fi
 endif
 
-	if [ -d "systemd" -a -d "cryptsetup" ]; then \
+	@if [ -d "systemd" -a -d "cryptsetup" ]; then \
 		cd cryptsetup && ./autogen.sh && \
 		./configure --prefix=$(shell realpath -m libexec/cryptsetup) --disable-asciidoc && \
 		make && make install; \
@@ -240,10 +240,12 @@ else ifeq ($(IS_DEBIAN), false)
 	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
 endif
 
-	@cp -rp libexec/systemd/$(PREFIX)/libexec/shelter/systemd $(PREFIX)/libexec/shelter
-	@cp -P libexec/cryptsetup/lib/*so* $(PREFIX)/libexec/shelter/systemd/lib64/systemd/
-	#@install -m 0755 libexec/redhat/systemd-repart "$(PREFIX)/libexec/shelter"
-	#@install -m 0755 libexec/redhat/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter"
+	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
+	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
+	@install -D -m 0755 libexec/redhat/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libsystemd-shared-256.so"
+	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0"
+	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
+	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
 
 ifeq ($(IS_APSARA), true)
 	@$(MAKE) _install_apsara
