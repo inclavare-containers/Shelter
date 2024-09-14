@@ -40,7 +40,23 @@ help:
 FORCE:
 
 _depend_redhat: # Install the build and runtime dependencies on redhat-like system
-	@install_pkg() { \
+	@makefile_deps="coreutils grep gawk sudo which git curl python3-pip \
+	                python3-pysocks which findutils util-linux +podman-docker \
+	                make gperf autoconf automake pkgconf-pkg-config libtool \
+	                meson cmake libseccomp-devel libcap-ng-devel glib2-devel \
+	                cryptsetup-devel gettext-devel openssl-devel popt-devel \
+	                device-mapper-devel libuuid-devel json-c-devel \
+	                libblkid-devel libssh-devel libcap-devel libmount-devel \
+	                libfdisk-devel libgcrypt-devel"; \
+	shelter_build_deps="sudo +python3.11 which diffutils rsync sed systemd \
+	                    socat +busybox kmod cryptsetup bubblewrap kernel-core \
+	                    qemu-kvm zstd libuuid device-mapper-libs openssl-libs \
+	                    json-c libblkid libselinux libsepol systemd-libs zlib \
+	                    pcre2 libmount libfdisk"; \
+	shelter_run_deps="diffutils rsync sed systemd socat +busybox kmod \
+	                  cryptsetup bubblewrap qemu-kvm"; \
+	demos_deps="tar openssl"; \
+	install_pkg() { \
 	  for p in "$$@"; do \
 	    local _p="$$p"; \
 	    [[ "$$p" == +* ]] && _p="$${p:1}"; \
@@ -59,17 +75,8 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	  done; \
 	}; \
 	sudo true && \
-	  install_pkg coreutils git sudo gawk grep +python3.11 python3-pip \
-	    python3-pysocks which util-linux cryptsetup curl libseccomp-devel \
-	    libcap-ng-devel automake libtool \
-	    diffutils rsync sed systemd socat +podman-docker \
-	    +busybox kmod bubblewrap qemu-kvm zstd glib2-devel \
-	    tar openssl \
-	    gcc gperf make autoconf automake pkg-config libtool findutils cmake \
-	    meson \
-	    libcryptsetup-devel gettext-devel openssl-devel popt-devel \
-	    device-mapper-devel libuuid-devel json-c-devel libblkid-devel \
-	    libssh-devel libcap-devel libmount-devel libfdisk-devel libgcrypt-devel
+	  install_pkg $${makefile_deps} $${shelter_build_deps} \
+	    $${shelter_run_deps} $${demos_deps}
 
 ifeq ($(IS_APSARA), true)
 	@$(MAKE) _depend_apsara
@@ -104,7 +111,22 @@ ifeq ($(IS_APSARA), false)
 endif
 
 _depend_debian: # Install the build and runtime dependencies on debian-like system
-	@install_pkg() { \
+	@makefile_deps="apt-utils coreutils grep gawk sudo git curl python3-pip \
+	                python3-socks findutils util-linux make gperf autoconf \
+	                automake pkg-config libtool meson cmake libseccomp-dev \
+	                libcap-ng-dev libglib2.0-dev libcryptsetup-dev \
+	                libpopt-dev libdevmapper-dev uuid-dev libjson-c-dev \
+	                libblkid-dev libssh-dev libcap-dev libmount-dev \
+	                libfdisk-dev libgcrypt-dev"; \
+	shelter_build_deps="sudo diffutils rsync sed systemd socat busybox-static \
+	                    kmod cryptsetup bubblewrap zstd libuuid1 \
+	                    libdevmapper1.02.1 libssl3 libcrypt1 libjson-c5 \
+	                    libblkid1 libselinux1 libcap2 libpcre2-8-0 libmount1 \
+	                    libfdisk1"; \
+	shelter_run_deps="diffutils rsync sed systemd socat busybox-static kmod \
+	                  cryptsetup bubblewrap qemu-system-x86"; \
+	demos_deps="tar openssl"; \
+	install_pkg() { \
 	  for p in "$$@"; do \
 	    local _p="$$p"; \
 	    [[ "$$p" == +* ]] && _p="$${p:1}"; \
@@ -122,16 +144,8 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	  done; \
 	}; \
 	sudo apt update && \
-	  install_pkg apt-utils coreutils git sudo gawk grep python3-socks \
-	    python3-pip util-linux cryptsetup curl \
-	    libseccomp-dev libcap-ng-dev \
-	    diffutils rsync libc-bin sed systemd socat \
-	    busybox-static kmod bubblewrap qemu-system-x86 zstd \
-	    tar openssl \
-	    gperf make autoconf automake pkg-config libtool findutils cmake meson \
-	    libcryptsetup-dev libpopt-dev libdevmapper-dev uuid-dev libjson-c-dev \
-	    libblkid-dev libssh-dev libcap-dev libmount-dev libfdisk-dev \
-	    libgcrypt-dev
+	  install_pkg $${makefile_deps} $${shelter_build_deps} \
+	    $${shelter_run_deps} $${demos_deps}
 
 	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
