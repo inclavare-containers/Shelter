@@ -65,13 +65,11 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	    diffutils rsync sed systemd socat +podman-docker \
 	    +busybox kmod bubblewrap qemu-kvm zstd glib2-devel \
 	    tar openssl \
-		gcc make autoconf \
-		automake gettext-devel pkgconfig \
-		openssl-devel popt-devel device-mapper-devel \
-		libuuid-devel json-c-devel libblkid-devel \
-		findutils libtool libssh-devel \
-		gperf libcap-devel cmake \
-		libmount-devel libfdisk-devel meson
+	    gcc gperf make autoconf automake pkg-config libtool findutils cmake \
+	    meson \
+	    libcryptsetup-devel gettext-devel openssl-devel popt-devel \
+	    device-mapper-devel libuuid-devel json-c-devel libblkid-devel \
+	    libssh-devel libcap-devel libmount-devel libfdisk-devel libgcrypt-devel
 
 ifeq ($(IS_APSARA), true)
 	@$(MAKE) _depend_apsara
@@ -125,11 +123,15 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	}; \
 	sudo apt update && \
 	  install_pkg apt-utils coreutils git sudo gawk grep python3-socks \
-	    python3-pip util-linux cryptsetup systemd-repart curl \
+	    python3-pip util-linux cryptsetup curl \
 	    libseccomp-dev libcap-ng-dev \
 	    diffutils rsync libc-bin sed systemd socat \
 	    busybox-static kmod bubblewrap qemu-system-x86 zstd \
-	    tar openssl
+	    tar openssl \
+	    gperf make autoconf automake pkg-config libtool findutils cmake meson \
+	    libcryptsetup-dev libpopt-dev libdevmapper-dev uuid-dev libjson-c-dev \
+	    libblkid-dev libssh-dev libcap-dev libmount-dev libfdisk-dev \
+	    libgcrypt-dev
 
 	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
@@ -142,6 +144,15 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1; \
 	    [ ! -s "$${HOME}/.cargo/env" ] && \
 	        curl https://sh.rustup.rs -sSf | sh; \
+	fi
+
+	@if [ ! -x "libexec/debian/systemd/bin/systemd-repart" -o ! -x "libexec/debian/systemd/bin/systemd-cryptsetup" ]; then \
+	    [ ! -d "cryptsetup" ] && { \
+	        git clone https://gitlab.com/cryptsetup/cryptsetup.git -b v2.7.4 --depth=1; \
+	    } || true; \
+	    [ ! -d "systemd" ] && { \
+	        git clone https://github.com/systemd/systemd.git -b v256.5 --depth=1; \
+	    } || true; \
 	fi
 
 _depend: # Install the build and runtime dependencies
@@ -172,17 +183,16 @@ else ifeq ($(IS_DEBIAN), false)
 endif
 
 	@if [ -d "systemd" -a -d "cryptsetup" ]; then \
-		cd cryptsetup && ./autogen.sh && \
-		./configure --prefix=$(shell realpath -m libexec/cryptsetup) --disable-asciidoc && \
-		make && make install; \
-		cd ../systemd && \
-		export PKG_CONFIG_PATH=$(shell realpath -m libexec/cryptsetup/lib/pkgconfig) && \
-		meson setup --auto-features=disabled -Drepart=enabled \
-		-Dlibcryptsetup=enabled -Dfdisk=enabled -Dblkid=enabled \
-		-Dc_args="-I$(shell realpath -m libexec/cryptsetup/include)" \
-		--prefix="$(PREFIX)/libexec/shelter/systemd" \
-		build && \
-		DESTDIR="$(shell realpath -m libexec/systemd)" meson install -C build; \
+	    cd cryptsetup && ./autogen.sh && \
+	      ./configure --prefix=$(shell realpath -m libexec/cryptsetup) --disable-asciidoc && \
+	      make && make install; \
+	    cd ../systemd && \
+	      export PKG_CONFIG_PATH=$(shell realpath -m libexec/cryptsetup/lib/pkgconfig) && \
+	      meson setup --auto-features=disabled -Drepart=enabled \
+	        -Dlibcryptsetup=enabled -Dfdisk=enabled -Dblkid=enabled \
+	        -Dc_args="-I$(shell realpath -m libexec/cryptsetup/include)" \
+	        --prefix="$(PREFIX)/libexec/shelter/systemd" build && \
+	      DESTDIR="$(shell realpath -m libexec/systemd)" meson install -C build; \
 	fi
 
 clean: # Clean the build artifacts
@@ -234,18 +244,24 @@ endif
 	    sudo install -m 0755 libexec/hygon/hag /usr/local/sbin/hag; \
 	    sudo install -m 0755 shelter.hygon.conf "$(CONFIG)"; \
 	fi
+
 ifeq ($(IS_DEBIAN), true)
 	@install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/libexec/shelter"
+	@install -D -m 0755 libexec/debian/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
+	@install -D -m 0755 libexec/debian/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
+	@install -D -m 0755 libexec/redhat/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libsystemd-shared-256.so"
+	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0"
+	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
+	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
 else ifeq ($(IS_DEBIAN), false)
 	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
-endif
-
 	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
 	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
 	@install -D -m 0755 libexec/redhat/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libsystemd-shared-256.so"
 	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
+endif
 
 ifeq ($(IS_APSARA), true)
 	@$(MAKE) _install_apsara
