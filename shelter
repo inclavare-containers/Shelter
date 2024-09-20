@@ -28,7 +28,7 @@ CONF="${SHELTER_IMAGE_DIR}/build.conf"
 
 SHELTER_CLEAN_FLAG="false"
 
-ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup")
+ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup" "kbs-client")
 ESSENTIAL_FILES=()
 
 # Timeout for rcS getting started to listen vsock
@@ -709,35 +709,6 @@ start() {
     fi
 
     debug "The guest is started at CID ${cid}"
-
-    if [ x"$(get_image_info image_type)" != x"disk" ]; then
-        return 0
-    fi
-
-    local wait_seconds=${SHELTER_TIMEOUT}
-    debug "Now waiting ${wait_seconds} seconds for the guest to open crypt disk ..."
-    local is_ready=0
-
-    for ((i=${wait_seconds}; i>0; i--)); do
-        if ! is-active; then
-            error "Failed to run shelter guest"
-            return 1
-        fi
-
-        if socat -u file:${SHELTER_PASSPHRASE} vsock-connect:${cid}:4321 1>&- 2>&-; then
-            # The guest is ready
-            is_ready=1
-            break
-        fi
-
-        sleep 1
-    done
-
-    if [ $is_ready -ne 1 ]; then
-        error "Failed to open shelter guest disk"
-        stop
-        exit 1
-    fi
 }
 
 is-active() {
