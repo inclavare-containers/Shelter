@@ -47,7 +47,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	                cryptsetup-devel gettext-devel openssl-devel popt-devel \
 	                device-mapper-devel libuuid-devel json-c-devel \
 	                libblkid-devel libssh-devel libcap-devel libmount-devel \
-	                libfdisk-devel libgcrypt-devel"; \
+	                libfdisk-devel libgcrypt-devel perl-IPC-Cmd"; \
 	shelter_build_deps="sudo +python3.11 which diffutils rsync sed systemd \
 	                    socat +busybox kmod cryptsetup bubblewrap kernel-core \
 	                    qemu-kvm zstd libuuid device-mapper-libs openssl-libs \
@@ -104,6 +104,15 @@ endif
 	    [ ! -d "systemd" ] && { \
 	        git clone https://github.com/systemd/systemd.git -b v256.5 --depth=1; \
 	    } || true; \
+	fi
+
+	@if [ ! -x "libexec/redhat/kbs-client" ]; then \
+	    [ ! -d "trustee" ] && \
+	    git clone https://github.com/confidential-containers/trustee.git -b v0.10.1 --depth=1 \
+		|| true; \
+		[ ! -s "$${HOME}/.cargo/env" ] &&  \
+	    curl https://sh.rustup.rs -sSf | sh \
+		|| true; \
 	fi
 
 ifeq ($(IS_APSARA), false)
@@ -209,6 +218,20 @@ endif
 	      DESTDIR="$(shell realpath -m libexec/systemd)" meson install -C build; \
 	fi
 
+ifeq ($(IS_DEBIAN), true)
+	@if [ -d "trustee" ]; then \
+		cd trustee/tools/kbs-client && \
+		make -C ../../kbs cli CLI_FEATURES=sample_only,csv-attester,snp-attester && \
+		cp -f ../target/release/kbs-client  ../../../libexec/debian/kbs-client; \
+	fi
+else ifeq ($(IS_DEBIAN), false)
+	@if [ -d "trustee" ]; then \
+		cd trustee/tools/kbs-client && \
+		make -C ../../kbs cli CLI_FEATURES=sample_only,csv-attester,snp-attester && \
+		cp -f ../../target/release/kbs-client  ../../../libexec/redhat/kbs-client; \
+	fi
+endif
+
 clean: # Clean the build artifacts
 
 install: # Install the build artifacts
@@ -275,6 +298,7 @@ else ifeq ($(IS_DEBIAN), false)
 	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
+	@install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/bin"
 endif
 
 ifeq ($(IS_APSARA), true)
@@ -283,7 +307,7 @@ endif
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
-	  sudo rm -f shelter; \
+	  sudo rm -f shelter kbs-client; \
 	} || true
 
 	@sudo rm -rf "$(CONFIG_DIR)"
