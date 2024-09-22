@@ -94,7 +94,7 @@ endif
 	            git am ../patches/virtiofsd/virtiofs-Force-VIRTIO_F_IOMMU_PLATFORM-feature-to-su.patch; \
 	        }; \
 	    [ ! -s "$${HOME}/.cargo/env" ] && \
-	        curl https://sh.rustup.rs -sSf | sh; \
+	        curl https://sh.rustup.rs -sSf | sh || true; \
 	fi
 
 	@if [ ! -x "libexec/redhat/systemd/bin/systemd-repart" -o ! -x "libexec/redhat/systemd/bin/systemd-cryptsetup" ]; then \
@@ -107,12 +107,11 @@ endif
 	fi
 
 	@if [ ! -x "libexec/redhat/kbs-client" ]; then \
-	    [ ! -d "trustee" ] && \
-	    git clone https://github.com/confidential-containers/trustee.git -b v0.10.1 --depth=1 \
-		|| true; \
-		[ ! -s "$${HOME}/.cargo/env" ] &&  \
-	    curl https://sh.rustup.rs -sSf | sh \
-		|| true; \
+	    [ ! -d "trustee" ] && { \
+	        git clone https://github.com/confidential-containers/trustee.git -b v0.10.1 --depth=1; \
+	    } || true; \
+	    [ ! -s "$${HOME}/.cargo/env" ] && \
+	        curl https://sh.rustup.rs -sSf | sh || true; \
 	fi
 
 ifeq ($(IS_APSARA), false)
