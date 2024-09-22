@@ -342,12 +342,14 @@ build() {
     local dst=""
 
     # Add the essential binaries
-    for i in "${ESSENTIAL_BINARIES[@]}"; do
-        i="$(which $i)"
-        debug "Copying essential binary $i ..."
+    for _f in "${ESSENTIAL_BINARIES[@]}"; do
+        local f="$(which $_f 2>/dev/null)"
+        [ -z "$f" ] && f="${SHELTER_BIN_DIR}/$_f"
 
-        copy_sodeps "$i"
-        copy_file_resolve_symlink "$i" "$i"
+        debug "Copying essential binary $f ..."
+
+        copy_sodeps "$f"
+        copy_file_resolve_symlink "$f" "$f"
     done
 
     local kernel_version="$(uname -r)"

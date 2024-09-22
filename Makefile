@@ -297,6 +297,7 @@ ifeq ($(IS_DEBIAN), true)
 	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
+	@install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
 else ifeq ($(IS_DEBIAN), false)
 	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
 	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
@@ -305,7 +306,7 @@ else ifeq ($(IS_DEBIAN), false)
 	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
-	@install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/bin"
+	@install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/libexec/shelter"
 endif
 
 ifeq ($(IS_APSARA), true)
@@ -314,7 +315,7 @@ endif
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
-	  sudo rm -f shelter kbs-client; \
+	  sudo rm -f shelter; \
 	} || true
 
 	@sudo rm -rf "$(CONFIG_DIR)"
