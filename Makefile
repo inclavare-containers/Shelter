@@ -177,6 +177,14 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	    } || true; \
 	fi
 
+	@if [ ! -x "libexec/debian/kbs-client" ]; then \
+	    [ ! -d "trustee" ] && { \
+	        git clone https://github.com/confidential-containers/trustee.git -b v0.10.1 --depth=1; \
+	    } || true; \
+	    [ ! -s "$${HOME}/.cargo/env" ] && \
+	        curl https://sh.rustup.rs -sSf | sh || true; \
+	fi
+
 _depend: # Install the build and runtime dependencies
 ifeq ($(IS_DEBIAN), true)
 	@$(MAKE) _depend_debian
