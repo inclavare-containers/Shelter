@@ -219,15 +219,15 @@ endif
 
 ifeq ($(IS_DEBIAN), true)
 	@if [ -d "trustee" ]; then \
-		cd trustee/tools/kbs-client && \
-		make -C ../../kbs cli CLI_FEATURES=sample_only,csv-attester,snp-attester && \
-		cp -f ../target/release/kbs-client  ../../../libexec/debian/kbs-client; \
+	    cd trustee/tools/kbs-client && \
+	    make -C ../../kbs cli CLI_FEATURES=sample_only,csv-attester,snp-attester && \
+	    cp -f ../target/release/kbs-client  ../../../libexec/debian/kbs-client; \
 	fi
 else ifeq ($(IS_DEBIAN), false)
 	@if [ -d "trustee" ]; then \
-		cd trustee/tools/kbs-client && \
-		make -C ../../kbs cli CLI_FEATURES=sample_only,csv-attester,snp-attester && \
-		cp -f ../../target/release/kbs-client  ../../../libexec/redhat/kbs-client; \
+	    cd trustee/tools/kbs-client && \
+	    make -C ../../kbs cli CLI_FEATURES=sample_only,csv-attester,snp-attester && \
+	    cp -f ../../target/release/kbs-client  ../../../libexec/redhat/kbs-client; \
 	fi
 endif
 
