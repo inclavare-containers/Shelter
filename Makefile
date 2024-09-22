@@ -16,6 +16,7 @@ IS_DEBIAN := $(shell \
     fi)
 
 ifeq ($(IS_DEBIAN), false)
+DISTRO=redhat
 IS_APSARA := $(shell \
     if [ -s "/etc/yum.repos.d/AlinuxApsara.repo" ]; then \
         echo true; \
@@ -23,6 +24,7 @@ IS_APSARA := $(shell \
         echo false; \
     fi)
 else
+DISTRO=debian
 IS_APSARA := false
 endif
 
@@ -30,8 +32,8 @@ ifeq ($(IS_APSARA), true)
 include apsara.mk
 endif
 
-.PHONE: help _depend_redhat _depend_debian _depend prepare build clean \
-    install uninstall test all sync _build_container container FORCE
+.PHONE: help FORCE prepare build clean install uninstall test all sync \
+    _build_container container
 
 help:
 	@grep -E '^[a-zA-Z][a-zA-Z0-9_-]+:.*?# .*$$' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*?# "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -39,7 +41,8 @@ help:
 
 FORCE:
 
-_depend_redhat: # Install the build and runtime dependencies on redhat-like system
+prepare: # Install the build and runtime dependencies (network access required)
+ifeq ($(IS_DEBIAN), false)
 	@makefile_deps="coreutils grep gawk sudo which git curl python3-pip \
 	                python3-pysocks which findutils util-linux +podman-docker \
 	                make gperf autoconf automake pkgconf-pkg-config libtool \
@@ -77,48 +80,7 @@ _depend_redhat: # Install the build and runtime dependencies on redhat-like syst
 	sudo true && \
 	  install_pkg $${makefile_deps} $${shelter_build_deps} \
 	    $${shelter_run_deps} $${demos_deps}
-
-ifeq ($(IS_APSARA), true)
-	@$(MAKE) _depend_apsara
-endif
-
-	# Work around mkosi for /usr/lib/os-release. See 1149444ef for the details
-	@sudo ln -sfn /etc/os-release /usr/lib/os-release
-
-	@if [ ! -x "libexec/redhat/virtiofsd" ]; then \
-	    [ ! -d "virtiofsd" ] && \
-	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1 --depth=1; \
-	        cd virtiofsd && { \
-	            git config user.name "shelter-dev"; \
-	            git config user.email "shelter-dev"; \
-	            git am ../patches/virtiofsd/virtiofs-Force-VIRTIO_F_IOMMU_PLATFORM-feature-to-su.patch; \
-	        }; \
-	    [ ! -s "$${HOME}/.cargo/env" ] && \
-	        curl https://sh.rustup.rs -sSf | sh || true; \
-	fi
-
-	@if [ ! -x "libexec/redhat/systemd/bin/systemd-repart" -o ! -x "libexec/redhat/systemd/bin/systemd-cryptsetup" ]; then \
-	    [ ! -d "cryptsetup" ] && { \
-	        git clone https://gitlab.com/cryptsetup/cryptsetup.git -b v2.7.4 --depth=1; \
-	    } || true; \
-	    [ ! -d "systemd" ] && { \
-	        git clone https://github.com/systemd/systemd.git -b v256.5 --depth=1; \
-	    } || true; \
-	fi
-
-	@if [ ! -x "libexec/redhat/kbs-client" ]; then \
-	    [ ! -d "trustee" ] && { \
-	        git clone https://github.com/confidential-containers/trustee.git -b v0.10.1 --depth=1; \
-	    } || true; \
-	    [ ! -s "$${HOME}/.cargo/env" ] && \
-	        curl https://sh.rustup.rs -sSf | sh || true; \
-	fi
-
-ifeq ($(IS_APSARA), false)
-	@sudo pip3 install toml-cli jinja2 --proxy=$(HTTPS_PROXY)
-endif
-
-_depend_debian: # Install the build and runtime dependencies on debian-like system
+else
 	@makefile_deps="apt-utils coreutils grep gawk sudo git curl python3-pip \
 	                python3-socks findutils util-linux make gperf autoconf \
 	                automake pkg-config libtool meson cmake libseccomp-dev \
@@ -154,48 +116,57 @@ _depend_debian: # Install the build and runtime dependencies on debian-like syst
 	sudo apt update && \
 	  install_pkg $${makefile_deps} $${shelter_build_deps} \
 	    $${shelter_run_deps} $${demos_deps}
+endif
 
+ifeq ($(IS_APSARA), true)
+	@$(MAKE) _depend_apsara
+endif
+
+ifeq ($(IS_DEBIAN), false)
+	# Work around mkosi for /usr/lib/os-release. See 1149444ef for the details
+	@sudo ln -sfn /etc/os-release /usr/lib/os-release
+
+ifeq ($(IS_APSARA), false)
+	@sudo pip3 install toml-cli jinja2 --proxy=$(HTTPS_PROXY)
+endif
+
+else
 	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
 	@if ! which docker >/dev/null 2>&1; then \
 	    sudo apt-get install -y docker.io; \
 	fi
+endif
 
-	@if [ ! -x "libexec/debian/virtiofsd" ]; then \
-	    [ ! -d "virtiofsd" ] && \
-	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1; \
-	    [ ! -s "$${HOME}/.cargo/env" ] && \
-	        curl https://sh.rustup.rs -sSf | sh; \
-	fi
-
-	@if [ ! -x "libexec/debian/systemd/bin/systemd-repart" -o ! -x "libexec/debian/systemd/bin/systemd-cryptsetup" ]; then \
-	    [ ! -d "cryptsetup" ] && { \
-	        git clone https://gitlab.com/cryptsetup/cryptsetup.git -b v2.7.4 --depth=1; \
-	    } || true; \
-	    [ ! -d "systemd" ] && { \
-	        git clone https://github.com/systemd/systemd.git -b v256.5 --depth=1; \
-	    } || true; \
-	fi
-
-	@if [ ! -x "libexec/debian/kbs-client" ]; then \
-	    [ ! -d "trustee" ] && { \
-	        git clone https://github.com/confidential-containers/trustee.git -b v0.10.1 --depth=1; \
+	@if [ ! -x "libexec/$(DISTRO)/virtiofsd" ]; then \
+	    [ ! -d "virtiofsd" ] && { \
+	        git clone https://gitlab.com/virtio-fs/virtiofsd.git -b v1.11.1 --depth=1; \
+	        cd virtiofsd && { \
+	            git config user.name "shelter-dev"; \
+	            git config user.email "shelter-dev"; \
+	            git am ../patches/virtiofsd/virtiofs-Force-VIRTIO_F_IOMMU_PLATFORM-feature-to-su.patch; \
+	        }; \
 	    } || true; \
 	    [ ! -s "$${HOME}/.cargo/env" ] && \
 	        curl https://sh.rustup.rs -sSf | sh || true; \
 	fi
 
-_depend: # Install the build and runtime dependencies
-ifeq ($(IS_DEBIAN), true)
-	@$(MAKE) _depend_debian
-else ifeq ($(IS_DEBIAN), false)
-	@$(MAKE) _depend_redhat
-else
-	@echo "Unknown Linux distribution"; \
-	exit 1
-endif
+	@if [ ! -x "libexec/$(DISTRO)/systemd/bin/systemd-repart" -o ! -x "libexec/$(DISTRO)/systemd/bin/systemd-cryptsetup" ]; then \
+	    [ ! -d "cryptsetup" ] && \
+	        git clone https://gitlab.com/cryptsetup/cryptsetup.git -b v2.7.4 --depth=1 \
+	    || true; \
+	    [ ! -d "systemd" ] && \
+	        git clone https://github.com/systemd/systemd.git -b v256.5 --depth=1 \
+	    || true; \
+	fi
 
-prepare: _depend # Download and configure the necessary components (network access required)
+	@if [ ! -x "libexec/$(DISTRO)/kbs-client" ]; then \
+	    [ ! -d "trustee" ] && \
+	        git clone https://github.com/confidential-containers/trustee.git -b v0.10.1 --depth=1 \
+	    || true; \
+	    [ ! -s "$${HOME}/.cargo/env" ] && \
+	        curl https://sh.rustup.rs -sSf | sh || true; \
+	fi
 
 build: # Build the necessary components (network access not required)
 ifeq ($(IS_DEBIAN), true)
