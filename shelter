@@ -279,7 +279,6 @@ build() {
         esac
         shift
     done
-
  
     if image_exists $image_id; then
         warn "The image \"$image_id\" already exists. It will be replaced."
@@ -355,7 +354,7 @@ build() {
     local kernel_version="$(uname -r)"
 
     if [ "$image_type" = "disk" ]; then
-        debug "Building initrd image: ${SHELTER_INITRD}"
+        debug "Building initrd for Disk image: ${SHELTER_INITRD}"
 
         ${SHELTER_BIN_DIR}/mkosi/bin/mkosi -f --debug -C "${SHELTER_DISK_CONF_DIR}" \
           --format=cpio \
@@ -417,7 +416,7 @@ build() {
     done
 
     if [ "$image_type" = "initrd" ]; then
-        debug "Building initrd image: ${SHELTER_INITRD}"
+        debug "Building Initrd image: ${SHELTER_INITRD}"
 
         ${SHELTER_BIN_DIR}/mkosi/bin/mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
           --build-script="${SHELTER_INITRD_CONF_DIR}/mkosi.build" \
