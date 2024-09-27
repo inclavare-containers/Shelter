@@ -29,7 +29,7 @@ IS_APSARA := false
 endif
 
 ifeq ($(IS_APSARA), true)
-include apsara.mk
+#include apsara.mk
 endif
 
 .PHONE: help FORCE prepare build clean install uninstall test all sync \
