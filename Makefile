@@ -119,7 +119,7 @@ else
 endif
 
 ifeq ($(IS_APSARA), true)
-	@$(MAKE) _depend_apsara
+#	@$(MAKE) _depend_apsara
 endif
 
 ifeq ($(IS_DEBIAN), false)
@@ -281,7 +281,7 @@ else ifeq ($(IS_DEBIAN), false)
 endif
 
 ifeq ($(IS_APSARA), true)
-	@$(MAKE) _install_apsara
+#	@$(MAKE) _install_apsara
 endif
 
 uninstall: # Uninstall the build artifacts
