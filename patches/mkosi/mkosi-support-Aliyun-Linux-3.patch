@@ -1,7 +1,7 @@
-From e353159816807525b8481c43e553c3e064e52c0b Mon Sep 17 00:00:00 2001
+From fc88ee29381af35386cf4cc07e43c7e51e8ecee3 Mon Sep 17 00:00:00 2001
 From: Jia Zhang <zhang.jia@linux.alibaba.com>
 Date: Thu, 1 Aug 2024 11:01:09 +0800
-Subject: [PATCH] mkosi: support Aliyun Linux 3
+Subject: [PATCH 1/2] mkosi: support Aliyun Linux 3
 
 Signed-off-by: Jia Zhang <zhang.jia@linux.alibaba.com>
 ---
@@ -132,7 +132,7 @@ index 7e04b269..174482b4 100644
  
 diff --git a/mkosi/distributions/alinux.py b/mkosi/distributions/alinux.py
 new file mode 100644
-index 00000000..3334f3c0
+index 00000000..bc38bbc2
 --- /dev/null
 +++ b/mkosi/distributions/alinux.py
 @@ -0,0 +1,62 @@
@@ -160,7 +160,7 @@ index 00000000..3334f3c0
 +
 +    @staticmethod
 +    def gpgurls(context: Context) -> tuple[str, ...]:
-+        if (Path("/") / "etc/yum.repos.d/AlinuxApsara.repo").exists():
++        if (Path("/") / "etc/alinux-apsara-release").exists():
 +            site = "yum.tbsite.net"
 +        else:
 +            site = "mirrors.cloud.aliyuncs.com"
@@ -176,7 +176,7 @@ index 00000000..3334f3c0
 +
 +    @classmethod
 +    def repository_variants(cls, context: Context, repo: str) -> list[RpmRepository]:
-+        if (Path("/") / "etc/yum.repos.d/AlinuxApsara.repo").exists():
++        if (Path("/") / "etc/alinux-apsara-release").exists():
 +            site = "yum.tbsite.net"
 +        else:
 +            site = "mirrors.cloud.aliyuncs.com"
