@@ -254,7 +254,7 @@ endif
 	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/mkosi" && \
 	  sudo cp -r libexec/mkosi/* "$(PREFIX)/libexec/shelter/mkosi"
 
-	# FIXIME: assume hygon platforms only support redhat-like system
+	# FIXME: assume hygon platforms only support redhat-like system
 	@if lscpu | grep -q -o 'HygonGenuine'; then \
 	    sudo install -m 0755 libexec/hygon/hag /usr/local/sbin/hag; \
 	    sudo install -m 0755 shelter.hygon.conf "$(CONFIG)"; \
