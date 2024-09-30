@@ -56,8 +56,8 @@ ifeq ($(IS_DEBIAN), false)
 	                    qemu-kvm zstd libuuid device-mapper-libs openssl-libs \
 	                    json-c libblkid libselinux libsepol systemd-libs zlib \
 	                    pcre2 libmount libfdisk"; \
-	shelter_run_deps="diffutils rsync sed systemd socat +busybox kmod \
-	                  cryptsetup bubblewrap qemu-kvm"; \
+	shelter_run_deps="sudo diffutils rsync sed systemd socat +busybox kmod \
+	                  cryptsetup bubblewrap qemu-kvm glib2"; \
 	demos_deps="tar openssl"; \
 	install_pkg() { \
 	  for p in "$$@"; do \
@@ -93,7 +93,7 @@ else
 	                    libdevmapper1.02.1 libssl3 libcrypt1 libjson-c5 \
 	                    libblkid1 libselinux1 libcap2 libpcre2-8-0 libmount1 \
 	                    libfdisk1"; \
-	shelter_run_deps="diffutils rsync sed systemd socat busybox-static kmod \
+	shelter_run_deps="sudo diffutils rsync sed systemd socat busybox-static kmod \
 	                  cryptsetup bubblewrap qemu-system-x86"; \
 	demos_deps="tar openssl"; \
 	install_pkg() { \
