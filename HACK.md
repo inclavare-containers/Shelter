@@ -52,4 +52,4 @@ Cleaning up.
 Failed to start transient service unit: Unit shelter.service was already loaded or has a fragment file.
 ```
 
-解决方法：执行`systemctl --user stop shelter.service`，然后再重新运行`shelter run`。
+解决方法：执行`systemctl --user stop shelter_xxxx.service`，然后再重新运行`shelter run`。
