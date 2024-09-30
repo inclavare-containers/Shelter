@@ -218,17 +218,17 @@ store_stage() {
     local val="$2"
 
     if [ ! -d "${SHELTER_STAGE_DIR}" ]; then
-        mkdir -p "${SHELTER_STAGE_DIR}"
+        sudo mkdir -p "${SHELTER_STAGE_DIR}"
     fi
 
-    echo -n "${val}" > "${SHELTER_STAGE_DIR}/${name}"
+    sudo echo -n "${val}" > "${SHELTER_STAGE_DIR}/${name}"
 }
 
 get_stage() {
     local name="$1"
 
     if [ -s "${SHELTER_STAGE_DIR}/${name}" ]; then
-        echo "$(cat ${SHELTER_STAGE_DIR}/${name})"
+        echo "$(sudo cat ${SHELTER_STAGE_DIR}/${name})"
     fi
 
     echo ""
@@ -586,7 +586,7 @@ EOF
         opts+=" -device virtio-net-pci,netdev=net0 -netdev user,id=net0,${port_maps}"
     fi
 
-    echo -n "${bin} ${opts} ${extra_opts}"
+    echo -n "sudo ${bin} ${opts} ${extra_opts}"
 }
 
 start() {
@@ -660,7 +660,7 @@ start() {
 
         debug "host-guest sharing between $src and $dst"
 
-        ${SHELTER_BIN_DIR}/virtiofsd \
+        sudo ${SHELTER_BIN_DIR}/virtiofsd \
           --socket-path="${SHELTER_STAGE_DIR}/virtiofs-${virtiofs_nr}.sock" \
           --shared-dir "${src}" &
         store_stage "virtiofs-${virtiofs_nr}.pid" "$!"
@@ -669,12 +669,12 @@ start() {
         virtiofs_nr=$((virtiofs_nr + 1))
     done
 
-    local max_user_ns="$(sysctl --binary --quiet user.max_user_namespaces)"
+    local max_user_ns="$(sudo sysctl --binary --quiet user.max_user_namespaces)"
 
     # Work around the default zero max_user_namespaces value on apasa
     if [ "${max_user_ns}" = "0" ]; then
         warn "Set user.max_user_namespaces to be 766996 forcibly."
-        sysctl --write user.max_user_namespaces=766996
+        sudo sysctl --write user.max_user_namespaces=766996
     fi
 
     local cid=$(randomize)
@@ -986,9 +986,9 @@ trap_handler() {
         for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
             [ ! -f "$f" ] && continue;
 
-            kill "$(cat ${f})" 2>/dev/null
-            rm -f "${f}"
-            rm -f "${f/.pid/.sock}"
+            sudo kill "$(sudo cat ${f})" 2>/dev/null
+            sudo rm -f "${f}"
+            sudo rm -f "${f/.pid/.sock}"
         done
 
         rm -f "${SHELTER_STAGE_DIR}/cid"
