@@ -1,0 +1,11 @@
+/build/
+target
+*.rs.bk
+*.iml
+.idea
+__pycache__
+*.pyc
+*~
+/libkrun.pc
+init/init
+examples/chroot_vm
