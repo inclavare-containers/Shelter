@@ -18,7 +18,7 @@ IS_DEBIAN := $(shell \
 ifeq ($(IS_DEBIAN), false)
 DISTRO=redhat
 IS_APSARA := $(shell \
-    if [ -s "/etc/yum.repos.d/AlinuxApsara.repo" ]; then \
+    if [ -s "/etc/alinux-apsara-release" ]; then \
         echo true; \
     else \
         echo false; \
