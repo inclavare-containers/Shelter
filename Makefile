@@ -50,7 +50,7 @@ ifeq ($(IS_DEBIAN), false)
 	                cryptsetup-devel gettext-devel openssl-devel popt-devel \
 	                device-mapper-devel libuuid-devel json-c-devel \
 	                libblkid-devel libssh-devel libcap-devel libmount-devel \
-	                libfdisk-devel libgcrypt-devel perl-IPC-Cmd"; \
+	                libfdisk-devel libgcrypt-devel perl-IPC-Cmd protobuf-compiler"; \
 	shelter_build_deps="sudo +python3.11 which diffutils rsync sed systemd \
 	                    socat +busybox kmod cryptsetup bubblewrap kernel-core \
 	                    qemu-kvm zstd libuuid device-mapper-libs openssl-libs \
@@ -160,10 +160,12 @@ endif
 	    || true; \
 	fi
 
-	@if [ ! -x "libexec/$(DISTRO)/kbs-client" ]; then \
-	    [ ! -d "trustee" ] && \
-	        git clone https://github.com/confidential-containers/trustee.git -b v0.10.1 --depth=1 \
-	    || true; \
+	@if [ ! -x "libexec/$(DISTRO)/kbs-client" -o ! -x "libexec/$(DISTRO)/kbs" ]; then \
+	    [ ! -d "trustee" ] && { \
+	        git clone https://github.com/confidential-containers/trustee.git -b v0.10.1 --depth=1; \
+			cd trustee; \
+			git apply ../patches/trustee/kbs-verifier.patch; \
+	    } || true; \
 	    [ ! -s "$${HOME}/.cargo/env" ] && \
 	        curl https://sh.rustup.rs -sSf | sh || true; \
 	fi
@@ -200,13 +202,19 @@ ifeq ($(IS_DEBIAN), true)
 	@if [ -d "trustee" ]; then \
 	    cd trustee/tools/kbs-client && \
 	    make -C ../../kbs cli CLI_FEATURES=sample_only,csv-attester,snp-attester && \
-	    cp -f ../target/release/kbs-client  ../../../libexec/debian/kbs-client; \
+	    cp -f ../../target/release/kbs-client  ../../../libexec/debian/kbs-client && \
+		cd ../../kbs && \
+		make AS_FEATURE=coco-as-builtin HTTPS_CRYPTO=openssl POLICY_ENGINE=opa ALIYUN=false && \
+		cp -f ../target/release/kbs  ../../libexec/debian/kbs; \
 	fi
 else ifeq ($(IS_DEBIAN), false)
 	@if [ -d "trustee" ]; then \
 	    cd trustee/tools/kbs-client && \
 	    make -C ../../kbs cli CLI_FEATURES=sample_only,csv-attester,snp-attester && \
-	    cp -f ../../target/release/kbs-client  ../../../libexec/redhat/kbs-client; \
+	    cp -f ../../target/release/kbs-client  ../../../libexec/redhat/kbs-client && \
+		cd ../../kbs && \
+		make AS_FEATURE=coco-as-builtin HTTPS_CRYPTO=openssl POLICY_ENGINE=opa ALIYUN=false && \
+		cp -f ../target/release/kbs  ../../libexec/redhat/kbs; \
 	fi
 endif
 
@@ -269,6 +277,7 @@ ifeq ($(IS_DEBIAN), true)
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
 	@install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
+	@install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter"
 else ifeq ($(IS_DEBIAN), false)
 	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
 	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
@@ -278,6 +287,7 @@ else ifeq ($(IS_DEBIAN), false)
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
 	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
 	@install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/libexec/shelter"
+	@install -m 0755 libexec/redhat/kbs "$(PREFIX)/libexec/shelter"
 endif
 
 ifeq ($(IS_APSARA), true)
