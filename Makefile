@@ -318,7 +318,7 @@ test: # Run verify-signature demo with shelter
 	@echo -e "\033[1;31mRunning the DEMO verify-signature in shelter guest ...\033[0m"
 	@./shelter build -t shelter-demos -c ./demos/verify-signature/build.conf && \
 	  { [ "$$(toml get --toml-path /var/lib/shelter/images/shelter-demos/image_info.toml image_type)" = "disk" ] && \
-		./demos/verify-signature/kbs.sh || true; } && \
+	    ./demos/verify-signature/kbs.sh || true; } && \
 	  ./shelter run shelter-demos verifier.sh \
 	    /keys/public_key.pem \
 	    /payload/archive.tar.gz.sig \
@@ -332,7 +332,7 @@ test: # Run verify-signature demo with shelter
 	  ls -l /root/demos /root/libexec
 
 	@[ "$$(toml get --toml-path /var/lib/shelter/images/shelter-demos/image_info.toml image_type)" = "disk" ] && \
-		./demos/verify-signature/kbs.sh || true
+	  ./demos/verify-signature/kbs.sh || true
 
 all: # Equivalent to make prepare build install
 	@make prepare build install
