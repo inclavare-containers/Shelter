@@ -18,13 +18,17 @@ cp demos/verify-signature/kbs/* /tmp/kbs/
 openssl genpkey -algorithm ed25519 > /tmp/kbs/private.key
 openssl pkey -in /tmp/kbs/private.key -pubout -out /tmp/kbs/public.pub
 
-systemd-run --user --description=Shelter --unit="kbs" -G /usr/local/libexec/shelter/kbs -c /tmp/kbs/config.toml && \
+systemd-run --user --description="kbs test server" --unit="kbs" -G /usr/local/libexec/shelter/kbs -c /tmp/kbs/config.toml && \
 echo "start kbs"
 
-sleep 5
 
-/usr/local/libexec/shelter/kbs-client \
-config --auth-private-key /tmp/kbs/private.key \
-set-resource --resource-file /var/lib/shelter/images/shelter-demos/passphrase \
---path default/shelter-demos/passphrase && \
-echo "upload passphrase"
+if [ "$(toml get --toml-path /var/lib/shelter/images/shelter-demos/image_info.toml image_type)" = "disk" ]; then
+    sleep 5
+
+    /usr/local/libexec/shelter/kbs-client \
+    config --auth-private-key /tmp/kbs/private.key \
+    set-resource --resource-file /var/lib/shelter/images/shelter-demos/passphrase \
+    --path default/shelter-demos/passphrase
+
+    echo "upload passphrase"
+fi
