@@ -581,9 +581,10 @@ EOF
         fi
         port_maps+="hostfwd=tcp::$host-:$guest," 
     done
+    opts+=" -device virtio-net-pci,netdev=net0 -netdev user,id=net0"
     if [ ! -z "${port_maps}" ];then
         port_maps="${port_maps%,}"
-        opts+=" -device virtio-net-pci,netdev=net0 -netdev user,id=net0,${port_maps}"
+        opts+=",${port_maps}"
     fi
 
     echo -n "sudo ${bin} ${opts} ${extra_opts}"
