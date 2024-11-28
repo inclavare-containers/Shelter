@@ -28,8 +28,8 @@ find /sys/ -name modalias -print0 | \
 acpid
 
 # try to config network
-iplink set eth0 up
-udhcpc -b
+ip link set eth0 up
+udhcpc -s /usr/share/udhcpc/default.script
 
 kbs-client --url $KBS_URL attest || poweroff
 

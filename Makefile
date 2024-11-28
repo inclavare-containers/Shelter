@@ -87,7 +87,7 @@ else
 	                libcap-ng-dev libglib2.0-dev libcryptsetup-dev \
 	                libpopt-dev libdevmapper-dev uuid-dev libjson-c-dev \
 	                libblkid-dev libssh-dev libcap-dev libmount-dev \
-	                libfdisk-dev libgcrypt-dev"; \
+	                libfdisk-dev libgcrypt-dev protobuf-compiler"; \
 	shelter_build_deps="sudo diffutils rsync sed systemd socat busybox-static \
 	                    kmod cryptsetup bubblewrap zstd libuuid1 \
 	                    libdevmapper1.02.1 libssl3 libcrypt1 libjson-c5 \
@@ -272,10 +272,10 @@ ifeq ($(IS_DEBIAN), true)
 	@install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/libexec/shelter"
 	@install -D -m 0755 libexec/debian/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
 	@install -D -m 0755 libexec/debian/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
-	@install -D -m 0755 libexec/redhat/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libsystemd-shared-256.so"
-	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0"
-	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
-	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
+	@install -D -m 0755 libexec/debian/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libsystemd-shared-256.so"
+	@install -D -m 0755 libexec/debian/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0"
+	@install -D -s -m 0755 libexec/debian/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
+	@install -D -s -m 0755 libexec/debian/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
 	@install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
 	@install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter"
 else ifeq ($(IS_DEBIAN), false)

@@ -26,8 +26,8 @@ fi
 mdev -d || mdev -s
 
 # try to config network
-iplink set eth0 up
-udhcpc
+ip link set eth0 up
+udhcpc -s /usr/share/udhcpc/default.script
 
 kbs-client --url $KBS_URL get-resource --path $PASSPHRASE_PATH | base64 -d | cryptsetup open -d - /dev/vda1 root
 
