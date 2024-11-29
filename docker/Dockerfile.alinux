@@ -6,8 +6,6 @@ FROM registry.cn-hangzhou.aliyuncs.com/alinux/alinux3:latest as builder
 
 # Define the default commit of source code
 ARG COMMIT=HEAD
-ARG USER_NAME
-ARG USER_PASSWORD
 # Define the https proxy
 ARG HTTPS_PROXY
 
@@ -16,13 +14,13 @@ ENV HTTPS_PROXY=${HTTPS_PROXY}
 WORKDIR /usr/src
 
 # Install the build dependencies
-RUN yum install -y git make sudo
+RUN yum install -y git make sudo binutils
 
 RUN git clone \
-      https://${USER_NAME}:${USER_PASSWORD}@github.com/inclavare-containers/Shelter.git && \
-    cd Shelter && git checkout ${COMMIT} && make build && make install
+    https://github.com/inclavare-containers/Shelter.git && \
+    cd Shelter && git checkout ${COMMIT} && make install
 
-
+    
 # The Dockerfile for shelter tool
 
 FROM registry.cn-hangzhou.aliyuncs.com/alinux/alinux3:latest
@@ -41,17 +39,17 @@ RUN yum install -y python3.11 python3-pip python3-pysocks which
 
 # Install the runtime dependencies for shelter
 RUN yum install -y diffutils rsync systemd socat \
-      busybox kmod bubblewrap qemu-kvm zstd \
-      kernel-core
+      busybox kmod bubblewrap qemu-kvm-core zstd \
+      kernel-core cryptsetup e2fsprogs glib2
 
 # Install toml-cli
 RUN pip3 install toml-cli --proxy=${HTTPS_PROXY}
 
 # Install the runtime dependencies for verify-signature demo
-RUN yum install -y openssl
+RUN yum install -y openssl tar make
 
 # Install the useful tools
-RUN yum install -y dracut tree
+RUN yum install -y dracut tree less
 
 # Work around the python 3.6 lower than the requirement from mkosi
 RUN ln -sfn `which python3.11` `which python3`
@@ -63,9 +61,21 @@ RUN ln -sfn /etc/os-release /usr/lib/os-release
 COPY --from=builder /etc/shelter.d/ /etc/shelter.d/
 COPY --from=builder /usr/local/bin/shelter /usr/local/bin/shelter
 COPY --from=builder /etc/shelter.conf /etc/shelter.conf
-COPY --from=builder /usr/local/libexec/shelter/mkosi /usr/local/libexec/shelter/mkosi
+COPY --from=builder /usr/local/libexec/shelter /usr/local/libexec/shelter
+#COPY --from=builder /usr/src/Shelter /root/Shelter
 RUN ln -sfn /usr/local/libexec/shelter/mkosi/bin/mkosi /usr/local/bin/mkosi
 
 ENV HTTPS_PROXY=""
 
-CMD [ "shelter" ]
+# Disable ksm service
+RUN systemctl disable ksm ksmtuned
+
+# Root auto login
+RUN <<EOF
+mkdir -p /etc/systemd/system/console-getty.service.d && \
+echo '[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -o '\''-p -f -- \\u'\'' --noclear --autologin root --keep-baud console 115200,38400,9600 $TERM' > /etc/systemd/system/console-getty.service.d/autologin.conf
+EOF
+
+CMD [ "/sbin/init" ]

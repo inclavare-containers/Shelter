@@ -343,30 +343,28 @@ _build_container: FORCE # Create the Shelter container image
 ifeq ($(IS_DEBIAN), true)
 	@docker build -f docker/Dockerfile.ubuntu \
 	  --build-arg COMMIT=$(COMMIT) \
-	  --build-arg USER_NAME=$(USER_NAME) \
-	  --build-arg USER_PASSWORD=$(USER_PASSWORD) \
 	  --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
 	  --network=host \
+	  --cap-add=CAP_AUDIT_WRITE \
 	  -t shelter-ubuntu:$$(cat VERSION.env) .
 else
 	@docker build -f docker/Dockerfile.alinux \
 	  --build-arg COMMIT=$(COMMIT) \
-	  --build-arg USER_NAME=$(USER_NAME) \
-	  --build-arg USER_PASSWORD=$(USER_PASSWORD) \
 	  --build-arg HTTPS_PROXY=$(HTTPS_PROXY) \
 	  --network=host \
+	  --cap-add=CAP_AUDIT_WRITE \
 	  -t shelter-alinux:$$(cat VERSION.env) .
 endif
 
 container: _build_container # Run the Shelter container image
 ifeq ($(IS_DEBIAN), true)
 	@docker run --name shelter-ubuntu-$$(cat VERSION.env) \
-	  --rm --privileged -v tmp:/var/tmp -it --network=host \
-	  shelter-ubuntu:$$(cat VERSION.env) bash
+	  --rm --privileged --tmpfs=/var/tmp -it --network=host --ipc=host \
+	  shelter-ubuntu:$$(cat VERSION.env)
 else
 	@docker run --name shelter-alinux-$$(cat VERSION.env) \
-	  --rm --privileged -v tmp:/var/tmp -it --network=host \
-	  localhost/shelter-alinux:$$(cat VERSION.env) bash
+	  --rm --privileged --tmpfs=/var/tmp -it --network=host  --ipc=host \
+	  localhost/shelter-alinux:$$(cat VERSION.env)
 endif
 
 version: # Show the version of Shelter
