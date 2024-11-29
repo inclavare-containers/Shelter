@@ -6,8 +6,6 @@ FROM ubuntu:22.04 as builder
 
 # Define the default commit of source code
 ARG COMMIT=HEAD
-ARG USER_NAME
-ARG USER_PASSWORD
 # Define the https proxy
 ARG HTTPS_PROXY
 
@@ -21,10 +19,10 @@ RUN apt-get update && \
     apt-get install -y apt-utils git make sudo gawk grep python3-socks python3-pip
 
 RUN git clone \
-      https://${USER_NAME}:${USER_PASSWORD}@github.com/inclavare-containers/Shelter.git && \
-    cd Shelter && git checkout ${COMMIT} && make build && make install
+     https://github.com/inclavare-containers/Shelter.git && \
+    cd Shelter && git checkout ${COMMIT} && make install
 
-
+    
 # The Dockerfile for shelter tool
 
 FROM ubuntu:22.04
@@ -46,7 +44,7 @@ RUN apt-get update && apt-get install -y apt-utils python3-pip python3-socks
 RUN apt-get install -y \
       coreutils gawk diffutils rsync libc-bin grep sed systemd socat \
       busybox-static kmod bubblewrap qemu-system-x86 zstd \
-      linux-modules-$(uname -r)
+      linux-modules-$(uname -r) sudo systemd-container libfdisk1
 
 # Install toml-cli
 RUN pip install toml-cli --proxy=${HTTPS_PROXY}
@@ -55,15 +53,27 @@ RUN pip install toml-cli --proxy=${HTTPS_PROXY}
 RUN apt-get install -y tar openssl
 
 # Install the useful tools
-RUN apt-get install -y dracut-core tree
+RUN apt-get install -y dracut-core tree less
 
 # Install the shelter tool
 COPY --from=builder /etc/shelter.d/ /etc/shelter.d/
 COPY --from=builder /usr/local/bin/shelter /usr/local/bin/shelter
 COPY --from=builder /etc/shelter.conf /etc/shelter.conf
-COPY --from=builder /usr/local/libexec/shelter/mkosi /usr/local/libexec/shelter/mkosi
+COPY --from=builder /usr/local/libexec/shelter /usr/local/libexec/shelter
+#COPY --from=builder /usr/src/Shelter /root/Shelter
 RUN ln -sfn /usr/local/libexec/shelter/mkosi/bin/mkosi /usr/local/bin/mkosi
+
+# Fix libdevmapper.so.1.02 not found
+RUN ln -s /usr/lib/x86_64-linux-gnu/libdevmapper.so /usr/lib/x86_64-linux-gnu/libdevmapper.so.1.02
 
 ENV HTTPS_PROXY=""
 
-CMD [ "shelter" ]
+# Root auto login
+RUN <<EOF
+mkdir -p /etc/systemd/system/console-getty.service.d && \
+echo '[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -o '\''-p -f -- \\u'\'' --noclear --autologin root --keep-baud console 115200,38400,9600 $TERM' > /etc/systemd/system/console-getty.service.d/autologin.conf
+EOF
+
+CMD [ "/usr/bin/systemd" ]
