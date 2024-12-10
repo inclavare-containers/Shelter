@@ -9,22 +9,8 @@ SHELTER_CONF_DIR="/etc/shelter.d"
 SHELTER_INITRD_CONF_DIR="${SHELTER_CONF_DIR}/initrd"
 SHELTER_DISK_CONF_DIR="${SHELTER_CONF_DIR}/disk"
 
-IMAGE_ID="default"
-
-SHELTER_DEFAULT_STAGE="${IMAGE_ID}"
 SHELTER_RUNTIME_DIR="/var/run/shelter"
-SHELTER_STAGE_DIR="${SHELTER_RUNTIME_DIR}/${SHELTER_DEFAULT_STAGE}"
-
 SHELTER_DATA_DIR="/var/lib/shelter"
-SHELTER_IMAGE_DIR="${SHELTER_DATA_DIR}/images/${IMAGE_ID}"
-SHELTER_INITRD="${SHELTER_IMAGE_DIR}/initrd"
-SHELTER_KERNEL="${SHELTER_IMAGE_DIR}/kernel"
-SHELTER_DISK="${SHELTER_IMAGE_DIR}/disk"
-SHELTER_PASSPHRASE="${SHELTER_IMAGE_DIR}/passphrase"
-SHELTER_IMAGE_CONF="${SHELTER_IMAGE_DIR}/shelter.conf"
-
-EXTRA_DIR="${SHELTER_IMAGE_DIR}/extra"
-CONF="${SHELTER_IMAGE_DIR}/build.conf"
 
 SHELTER_CLEAN_FLAG="false"
 
@@ -40,6 +26,18 @@ COMMANDS=()
 
 # Record the tags to mount virtiofs in guest
 declare -A VIRTIOFS_MAPPING
+
+IMAGE_ID="default"
+SHELTER_DEFAULT_STAGE="${IMAGE_ID}"
+SHELTER_STAGE_DIR="${SHELTER_RUNTIME_DIR}/${SHELTER_DEFAULT_STAGE}"
+SHELTER_IMAGE_DIR="${SHELTER_DATA_DIR}/images/${IMAGE_ID}"
+SHELTER_INITRD="${SHELTER_IMAGE_DIR}/initrd"
+SHELTER_KERNEL="${SHELTER_IMAGE_DIR}/kernel"
+SHELTER_DISK="${SHELTER_IMAGE_DIR}/disk"
+SHELTER_PASSPHRASE="${SHELTER_IMAGE_DIR}/passphrase"
+SHELTER_IMAGE_CONF="${SHELTER_IMAGE_DIR}/shelter.conf"
+SHELTER_EXTRA_DIR="${SHELTER_IMAGE_DIR}/extra"
+SHELTER_BUILD_CONF="${SHELTER_IMAGE_DIR}/build.conf"
 
 # Function: Display help information
 show_help() {
@@ -81,18 +79,18 @@ create_passphrase() {
     chmod 600 ${SHELTER_PASSPHRASE}
 }
 
-add_dir() {
-    local dir_path=$1
+create_dir() {
+    local dir_path="$1"
 
-    if [ ! -d "${EXTRA_DIR}$dir_path" ]; then
-        mkdir -p "${EXTRA_DIR}${dir_path}"
+    if [ ! -d "${SHELTER_EXTRA_DIR}/$dir_path" ]; then
+        mkdir -p "${SHELTER_EXTRA_DIR}/${dir_path}"
     fi
 }
 
 set_image_dir() {
-    local image_id=${1-default}
+    local image_id="${1-default}"
 
-    IMAGE_ID=${image_id}
+    IMAGE_ID="${image_id}"
     SHELTER_DEFAULT_STAGE="${IMAGE_ID}"
     SHELTER_STAGE_DIR="${SHELTER_RUNTIME_DIR}/${SHELTER_DEFAULT_STAGE}"
     SHELTER_IMAGE_DIR="${SHELTER_DATA_DIR}/images/${IMAGE_ID}"
@@ -101,15 +99,14 @@ set_image_dir() {
     SHELTER_DISK="${SHELTER_IMAGE_DIR}/disk"
     SHELTER_PASSPHRASE="${SHELTER_IMAGE_DIR}/passphrase"
     SHELTER_IMAGE_CONF="${SHELTER_IMAGE_DIR}/shelter.conf"
-
-    EXTRA_DIR="${SHELTER_IMAGE_DIR}/extra"
+    SHELTER_EXTRA_DIR="${SHELTER_IMAGE_DIR}/extra"
 
     info "Using Image ID: $IMAGE_ID"
 }
 
 copy_file_and_dir_no_resolve_symlink() {
-    local src_path=$(realpath -s $1)
-    local dst_path=${2:-$src_path}
+    local src_path="$(realpath -s $1)"
+    local dst_path="${2:-$src_path}"
 
     # Check if the path exists
     if [ ! -e "$src_path" ]; then
@@ -118,8 +115,8 @@ copy_file_and_dir_no_resolve_symlink() {
     fi
 
     # Check if is a file and already copied
-    if ([ -e "${EXTRA_DIR}${dst_path}" ] || [ -L "${EXTRA_DIR}${dst_path}" ]) && ! diff -q "${src_path}" "${EXTRA_DIR}${dst_path}" >/dev/null ; then
-        warn "Warn: target path $dst_path already existed in $EXTRA_DIR but different, will be overwrited"
+    if ([ -e "${SHELTER_EXTRA_DIR}/${dst_path}" ] || [ -L "${SHELTER_EXTRA_DIR}/${dst_path}" ]) && ! diff -q "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}" >/dev/null; then
+        warn "Warn: target path $dst_path already existed in $SHELTER_EXTRA_DIR but different, will be overwrited"
     fi
 
     if [[ -d "$src_path" ]]; then
@@ -127,16 +124,16 @@ copy_file_and_dir_no_resolve_symlink() {
         dst_path="$dst_path"/
     fi
 
-    debug "Copying ${src_path} -> ${EXTRA_DIR}${dst_path} ..."
+    debug "Copying ${src_path} -> ${SHELTER_EXTRA_DIR}/${dst_path} ..."
 
-    add_dir "$(dirname $dst_path)"
-    rsync -ap --links "${src_path}" "${EXTRA_DIR}${dst_path}"
+    create_dir "$(dirname $dst_path)"
+    rsync -ap --links "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}"
 }
 
 # Function to copy file (dir is not handled)
 copy_file_resolve_symlink() {
-    local src_path=$(realpath -s $1)
-    local dst_path=${2:-$src_path}
+    local src_path="$(realpath -s $1)"
+    local dst_path="${2:-$src_path}"
 
     # Check if the file exists
     if [ ! -e "$src_path" ]; then
@@ -145,48 +142,46 @@ copy_file_resolve_symlink() {
     fi
 
     # Check if the file already copied
-    if [ -e "${EXTRA_DIR}${dst_path}" ] && ! diff -q "${src_path}" "${EXTRA_DIR}${dst_path}" >/dev/null ; then
-        warn "Warn: target path $dst_path already existed in $EXTRA_DIR but different, will be overwrited"
+    if [ -e "${SHELTER_EXTRA_DIR}/${dst_path}" ] && ! diff -q "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}" >/dev/null; then
+        warn "Warn: target path $dst_path already existed in $SHELTER_EXTRA_DIR but different, will be overwrited"
     fi
 
-    # Check if file is symbolic link
+    # Check if file is a symbolic link
     if [ -L "$src_path" ]; then
-        local target_file_path=$(realpath $1)
-        copy_file_resolve_symlink $target_file_path
+        copy_file_resolve_symlink "$(realpath $1)"
 
-        debug "Copying ${src_path} -> ${EXTRA_DIR}${dst_path} ..."
+        debug "Copying ${src_path} -> ${SHELTER_EXTRA_DIR}/${dst_path} ..."
 
-        add_dir $(dirname $dst_path)
-        rsync -a --links "${src_path}" "${EXTRA_DIR}${dst_path}"
+        create_dir "$(dirname $dst_path)"
+        rsync -a --links "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}"
         return
     fi
 
-    # Check if file is regular
+    # Check if file is a regular file
     if [ -f "$src_path" ]; then
-        debug "Copying ${src_path} -> ${EXTRA_DIR}${dst_path} ..."
+        debug "Copying ${src_path} -> ${SHELTER_EXTRA_DIR}/${dst_path} ..."
 
-        add_dir $(dirname $dst_path)
-        cp -a "${src_path}" "${EXTRA_DIR}${dst_path}"
+        create_dir "$(dirname $dst_path)"
+        cp -a -f -p "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}"
         return
     fi
 
-    warn "$src_path isn't sysmlink or regular file"
+    error "Error: $src_path isn't a sysmlink or regular file"
     exit 1
 }
 
-# Function to copy shared library
+# Function to recursively copy the dependent library files for the binary
 copy_sodeps() {
-    local binary_path=$1
+    local binary_path="$1"
 
-    # Check if the file exists
+    # Check if the binary exists
     if [ ! -f "$binary_path" ]; then
-        error "Error: $binary_path is not a valid file path"
+        error "Error: $binary_path is not a valid binary path"
         exit 1
     fi
 
-    # Use ldd to get dependencies
-    local dependencies=$(ldd "$binary_path" 2>/dev/null)
-
+    # Use ldd to get the dependencies
+    local dependencies="$(ldd $binary_path 2>/dev/null)"
     if [ $? -ne 0 ]; then
         # Check the statically linked binary
         if file $binary_path | grep -q "statically linked"; then
@@ -197,20 +192,21 @@ copy_sodeps() {
         return 0
     fi
 
-    # Parse ldd output and extract and copy dependency paths
+    # Parse the dependencies, and extract and copy dependency paths
     echo "$dependencies" | while read -r line; do
+        local lib_path
+
         # Check if the line not contains '=>'
         if ! echo "$line" | grep -q '=>'; then
             # Extract the path, ensuring it starts with /
-            local lib_path
             lib_path=$(echo "$line" | awk '{print $1}' | grep '^/')
             if [ -n "$lib_path" ]; then
                 copy_file_resolve_symlink "$lib_path"
-                continue
             fi
         else
-            local lib_path
             lib_path=$(echo "$line" | awk -F '=>' '{print $2}' | awk '{print $1}')
+            # Ignore the library such as vdso, e.g,
+            # linux-vdso.so.1 (0x00007ffe09a67000)
             if [ -n "$lib_path" ] && [ -e "$lib_path" ]; then
                 copy_file_resolve_symlink "$lib_path"
             fi
@@ -248,15 +244,17 @@ build() {
     # The default image type is initrd
     local image_type="$(get_conf image_type)"
     image_type="${image_type:=initrd}"
-    image_id="${image_id:=default}"
+    # The default image id is "default"
+    local image_id="default"
+    local build_conf="${SHELTER_BUILD_CONF}"
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -c|--config)
                 if [[ ! -z "$2" && "$2" != -* ]]; then
-                    CONF="$2"
-                    if [ ! -s "$CONF" ]; then
-                        error "Error: build config file \"$CONF\" doesn't exist"
+                    build_conf="$2"
+                    if [ ! -s "$build_conf" ]; then
+                        error "Error: build config file \"$build_conf\" doesn't exist"
                         exit 1
                     fi
                     shift
@@ -265,6 +263,7 @@ build() {
                     return 1
                 fi
                 ;;
+            # The cmdline option can overwrite the value from the configuration
             -T|--image-type)
                 if [[ "$2" != "initrd" && "$2" != "disk" ]]; then
                     error "Error: invalid -T|--image-type value." >&2
@@ -285,17 +284,18 @@ build() {
         shift
     done
  
-    if image_exists $image_id; then
+    if image_exists "$image_id"; then
         warn "The image \"$image_id\" already exists. It will be replaced."
     fi
 
-    set_image_dir ${image_id}
+    set_image_dir "${image_id}"
 
-    debug "Gather files to be copied and copy into $EXTRA_DIR"
-    rm -rf "$EXTRA_DIR"
+    debug "Gather files to be copied into $SHELTER_EXTRA_DIR"
 
-    if [ ! -d "$EXTRA_DIR" ]; then
-        mkdir -p "$EXTRA_DIR"
+    if [ ! -d "$SHELTER_EXTRA_DIR" ]; then
+        mkdir -p "$SHELTER_EXTRA_DIR"
+    else
+        rm -rf "$SHELTER_EXTRA_DIR"/*
     fi
 
     local binaries=()
@@ -303,8 +303,8 @@ build() {
     local packages=()
     local src_dir="$(pwd)"
 
-    if [ -s "$CONF" ]; then
-        info "Using $CONF as config file"
+    if [ -s "$build_conf" ]; then
+        info "Using $build_conf as config file"
 
         # Read options from the configuration file
         while IFS= read -r line || [ -n "$line" ]; do
@@ -330,20 +330,17 @@ build() {
                  IFS=' ' read -r -a package_array <<< "$line"
                  packages+=("${package_array[@]}")
             fi
-        done < "$CONF"
+        done < "$build_conf"
 
         # Assume any relative path in the source is always based on the
         # directory where the config file resides.
-        src_dir="$(dirname $CONF)"
+        src_dir="$(dirname $build_conf)"
     fi
 
-    # convert the packages to mkosi's parameters
-    for i in "${!packages[@]}"; do
-        packages[i]="--package=${packages[i]}"   
+    # Convert the packages to mkosi's parameters
+    for _i in "${!packages[@]}"; do
+        packages[_i]="--package=${packages[_i]}"
     done
-
-    local src=""
-    local dst=""
 
     # Add the essential binaries
     for _f in "${ESSENTIAL_BINARIES[@]}"; do
@@ -357,8 +354,8 @@ build() {
     done
 
     # Add the essential files
-    for i in "${ESSENTIAL_FILES[@]}"; do
-        copy_file_and_dir_no_resolve_symlink "$i"
+    for _i in "${ESSENTIAL_FILES[@]}"; do
+        copy_file_and_dir_no_resolve_symlink "$_i"
     done
 
     local kernel_version="$(uname -r)"
@@ -366,30 +363,34 @@ build() {
     if [ "$image_type" = "disk" ]; then
         debug "Building initrd for Disk image: ${SHELTER_INITRD}"
 
-        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi -f --debug -C "${SHELTER_DISK_CONF_DIR}" \
+        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi \
+          -f --debug -C "${SHELTER_DISK_CONF_DIR}" \
           --format=cpio \
           --environment=STAGE=CPIO \
           --postinst-script="${SHELTER_DISK_CONF_DIR}/mkosi.postinst" \
-          --output-dir="${SHELTER_IMAGE_DIR}" --output="$(basename ${SHELTER_INITRD})" \
-          --extra-tree="${EXTRA_DIR}:/extra" \
+          --output-dir="${SHELTER_IMAGE_DIR}" \
+          --output="$(basename ${SHELTER_INITRD})" \
+          --extra-tree="${SHELTER_EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
           --package="${packages[@]}" \
           --extra-search-path="${SHELTER_BIN_DIR}/systemd/bin" \
           build
-
         if [ $? -ne 0 ]; then
-            error "Error: failed to build initrd with mkosi"
+            error "Error: failed to build initrd for disk image with mkosi"
             exit 1
         fi
     fi
 
+    local src=""
+    local dst=""
+
     # Parse the mapping between the source and destinaion
-    for i in "${binaries[@]}"; do
-        if [[ "$i" == *:* ]]; then
-            IFS=':' read -r src dst <<< "$i"
+    for _i in "${binaries[@]}"; do
+        if [[ "$_i" == *:* ]]; then
+            IFS=':' read -r src dst <<< "$_i"
         else
-            src="$i"
-            dst="$i"
+            src="$_i"
+            dst="$_i"
         fi
 
         # Prepend the prefix
@@ -397,9 +398,7 @@ build() {
             src="$src_dir/$src"
         fi
 
-        src="$(realpath $src)"
-
-        copy_sodeps $src
+        copy_sodeps "$src"
         copy_file_resolve_symlink "$src" "$dst"
     done
 
@@ -415,24 +414,23 @@ build() {
             src="$src_dir/$src"
         fi
 
-        src="$(realpath $src)"
-
         copy_file_and_dir_no_resolve_symlink "$src" "$dst"
     done
 
     if [ "$image_type" = "initrd" ]; then
         debug "Building Initrd image: ${SHELTER_INITRD}"
 
-        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
+        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi \
+          -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
           --build-script="${SHELTER_INITRD_CONF_DIR}/mkosi.build" \
           --finalize-script="${SHELTER_INITRD_CONF_DIR}/mkosi.finalize" \
           --postinst-script="${SHELTER_INITRD_CONF_DIR}/mkosi.postinst" \
-          --output-dir="${SHELTER_IMAGE_DIR}" --output="$(basename ${SHELTER_INITRD})" \
-          --extra-tree="${EXTRA_DIR}:/extra" \
+          --output-dir="${SHELTER_IMAGE_DIR}" \
+          --output="$(basename ${SHELTER_INITRD})" \
+          --extra-tree="${SHELTER_EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
           "${packages[@]}" \
-          build     
-
+          build
         if [ $? -ne 0 ]; then
             error "Error: failed to build initrd image with mkosi"
             exit 1
@@ -442,20 +440,20 @@ build() {
 
         debug "Building Disk image: ${SHELTER_DISK}"
 
-        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi -f --debug -C "${SHELTER_DISK_CONF_DIR}" \
+        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi \
+          -f --debug -C "${SHELTER_DISK_CONF_DIR}" \
           --format=disk \
           --environment=STAGE=DISK \
           --build-script="${SHELTER_DISK_CONF_DIR}/mkosi.build" \
           --finalize-script="${SHELTER_DISK_CONF_DIR}/mkosi.finalize" \
           --postinst-script="${SHELTER_DISK_CONF_DIR}/mkosi.postinst" \
           --output-dir="${SHELTER_IMAGE_DIR}" --output="$(basename ${SHELTER_DISK})" \
-          --extra-tree="${EXTRA_DIR}:/extra" \
+          --extra-tree="${SHELTER_EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
           --passphrase="${SHELTER_PASSPHRASE}" \
           --repart-dir="${SHELTER_DISK_CONF_DIR}/mkosi.repart" \
           --extra-search-path="${SHELTER_BIN_DIR}/systemd/bin" \
           build
-
         if [ $? -ne 0 ]; then
             error "Error: failed to build disk image with mkosi"
             exit 1
@@ -471,23 +469,25 @@ build() {
 
     if [ -s "/boot/vmlinuz-${kernel_version}" ]; then
         cp -f "/boot/vmlinuz-${kernel_version}" "${SHELTER_KERNEL}"
+
         info "Succeed to build the image \"$IMAGE_ID\""
         store_image_info "kernel_hash" $(sha256sum ${SHELTER_IMAGE_DIR}/kernel | awk '{print substr($1, 1, 9)}')
         return 0
-    else
-        # Arch Linux doesn't have a versioned kernel image file
-        for kernel_image in /boot/vmlinu*; do
-            image_version=$(file -bL "$kernel_image" | grep -o 'version [^ ]*' | cut -d ' ' -f 2)
-            if [[ "$image_version" == "$kernel_version" ]]; then
-                cp -f $kernel_image ./image.vmlinuz
-                info "Build successful, image id: $IMAGE_ID"
-                store_image_info "kernel_hash" $(sha256sum ${SHELTER_IMAGE_DIR}/kernel | awk '{print substr($1, 1, 9)}')
-                return 0
-            fi
-        done
     fi
 
-    error "Error: can't find the currently active kernel from /boot/"
+    # Arch Linux doesn't have a versioned kernel image file
+    for kernel_image in /boot/vmlinu*; do
+        image_version=$(file -bL "$kernel_image" | grep -o 'version [^ ]*' | cut -d ' ' -f 2)
+        if [[ "$image_version" == "$kernel_version" ]]; then
+            cp -f $kernel_image ./image.vmlinuz
+
+            info "Succeed to build the image \"$IMAGE_ID\""
+            store_image_info "kernel_hash" $(sha256sum ${SHELTER_IMAGE_DIR}/kernel | awk '{print substr($1, 1, 9)}')
+            return 0
+        fi
+    done
+
+    error "Error: can't find the currently active kernel from /boot"
     exit 1
 }
 
@@ -833,7 +833,7 @@ exec() {
 
 clean() {
     ${SHELTER_BIN_DIR}/mkosi/bin/mkosi clean
-    rm -rf "${EXTRA_DIR}"
+    rm -rf "${SHELTER_EXTRA_DIR}"
 }
 
 show_images() {
