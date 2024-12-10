@@ -188,6 +188,11 @@ copy_sodeps() {
     local dependencies=$(ldd "$binary_path" 2>/dev/null)
 
     if [ $? -ne 0 ]; then
+        # Check the statically linked binary
+        if file $binary_path | grep -q "statically linked"; then
+            return 0
+        fi
+
         warn "Warn: $binary_path is not a dynamic binary"
         return 0
     fi
