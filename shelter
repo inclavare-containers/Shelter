@@ -596,30 +596,12 @@ EOF
 }
 
 start() {
-    if is-active; then
-        error "the app ${IMAGE_ID} is already started"
-        SHELTER_CLEAN_FLAG="false"
-        exit 1;
-    fi
-
-    if [ x"$(get_image_info image_type)" = x"" ]; then
-        error "The file ${SHELTER_STAGE_DIR}/image_type is missing. You may need to run 'shelter build' first."
-        exit 1
-    fi
-
-    if [ ! -s "${SHELTER_KERNEL}" ]; then
-        error "The file ${SHELTSHELTER_KERNELER_INITRD} is missing. You may need to run 'shelter build' first."
-        exit 1
-    fi
-
-    if [ ! -s "${SHELTER_INITRD}" ]; then
-        error "The file ${SHELTER_INITRD} is missing. You may need to run 'shelter build' first."
-        exit 1
-    fi
-
     local opts=()
     local volumes=()
     local ports=()
+    local conf="${SHELTER_CONF}"
+    local image_checked="false"
+
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -v|--volume)
@@ -638,8 +620,31 @@ start() {
                 ports+=("$2")
                 shift
                 ;;
+            -c|--config)
+                if [[ ! -z "$2" && "$2" != -* ]]; then
+                    conf="$2"
+                    if [ ! -s "$conf" ]; then
+                        error "Error: runtime config file \"$conf\" doesn't exist"
+                        exit 1
+                    fi
+                    SHELTER_CONF="$conf"
+                    shift
+                else
+                    error "Error: --config requires a value." >&2
+                    return 1
+                fi
+                ;;
+            # Gather the commands to run
             *)
-                opts+=("$1")
+                if [ "$image_checked" == "true" ]; then
+                    opts+=("$1")
+                else
+                    # Check whether the image id is specified
+                    if ! prepre_image "$1"; then
+                        opts+=("$1")
+                    fi
+                    image_checked="true"
+                fi
                 ;;
         esac
         shift
@@ -647,16 +652,38 @@ start() {
 
     COMMANDS=${opts[@]}
 
+    if is-active; then
+        error "The image ${IMAGE_ID} is already started"
+        exit 1
+    fi
+
+    SHELTER_CLEAN_FLAG="true"
+
+    if [ x"$(get_image_info image_type)" = x"" ]; then
+        error "The file ${SHELTER_STAGE_DIR}/image_type is missing. You may need to run 'shelter build' first."
+        exit 1
+    fi
+
+    if [ ! -s "${SHELTER_KERNEL}" ]; then
+        error "The file ${SHELTER_KERNEL} is missing. You may need to run 'shelter build' first."
+        exit 1
+    fi
+
+    if [ ! -s "${SHELTER_INITRD}" ]; then
+        error "The file ${SHELTER_INITRD} is missing. You may need to run 'shelter build' first."
+        exit 1
+    fi
+
     local virtiofs_nr=0
-    for i in "${volumes[@]}"; do
+    for _i in "${volumes[@]}"; do
         local src
         local dst
 
-        if [[ "$i" == *:* ]]; then
-            IFS=':' read -r src dst <<< "$i"
+        if [[ "$_i" == *:* ]]; then
+            IFS=':' read -r src dst <<< "$_i"
         else
-            src="$i"
-            dst="$i"
+            src="$_i"
+            dst="$_i"
         fi
 
         if [ ! -d "${src}" ]; then
@@ -723,7 +750,6 @@ is-active() {
 }
 
 run() {
-    SHELTER_CLEAN_FLAG="true"
     start "$@"
 
     debug "The guest is booting"
@@ -924,9 +950,6 @@ main() {
 
     case $subcommand in
         start)
-            if prepre_image "$1"; then
-                shift
-            fi 
             start "$@"
             ;;
         stop)
@@ -945,9 +968,6 @@ main() {
             status
             ;;
         run)
-            if prepre_image "$1"; then
-                shift
-            fi 
             run "$@"
             ;;
         exec)
