@@ -1,6 +1,6 @@
 insecure_http = true
 insecure_api = true
-sockets = ["0.0.0.0:8080"]
+sockets = ["127.0.0.1:8080"]
 auth_public_key = "/tmp/kbs/public.pub"
 
 [attestation_token_config]
