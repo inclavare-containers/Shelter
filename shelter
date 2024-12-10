@@ -458,9 +458,9 @@ build() {
     fi
 
     store_image_info "image_type" "${image_type}"
-    store_image_info "initrd_hash" $(sha256sum ${SHELTER_IMAGE_DIR}/initrd |awk '{print substr($1, 1, 9)}')
-    store_image_info "initrd_size" `ls -l -h $(readlink -f ${SHELTER_IMAGE_DIR}/initrd)|awk '{print $5}'`
-    store_image_info "create_time" $(ls -l --time-style=+"%m-%d+%H:%M:%S" ${SHELTER_IMAGE_DIR}/initrd | awk '{print $6}')
+    store_image_info "initrd_hash" "$(sha256sum ${SHELTER_IMAGE_DIR}/$image_type | awk '{print substr($1, 1, 9)}')"
+    store_image_info "initrd_size" "$(ls -l -h $(readlink -f ${SHELTER_IMAGE_DIR}/$image_type) | awk '{print $5}')"
+    store_image_info "create_time" "$(ls -l --time-style=+"%m-%d+%H:%M:%S" ${SHELTER_IMAGE_DIR}/$image_type | awk '{print $6}')"
 
     debug "Copying kernel: ${SHELTER_KERNEL}"
 
