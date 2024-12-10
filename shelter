@@ -429,7 +429,7 @@ build() {
           --output="$(basename ${SHELTER_INITRD})" \
           --extra-tree="${SHELTER_EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
-          "${packages[@]}" \
+          --package="${packages[@]}" \
           build
         if [ $? -ne 0 ]; then
             error "Error: failed to build initrd image with mkosi"
