@@ -862,11 +862,12 @@ show_images() {
 }
 
 image_exists() {
-    local image_id=$1
-    if [ -s "${SHELTER_DATA_DIR}/images/${image_id}/initrd" ];then 
+    local image_id="$1"
+
+    if [ -s "${SHELTER_DATA_DIR}/images/${image_id}/image_info.toml" ]; then
         return 0
-    else 
-        return 1 
+    else
+        return 1
     fi
 }
 
