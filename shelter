@@ -12,6 +12,7 @@ SHELTER_DISK_CONF_DIR="${SHELTER_CONF_DIR}/disk"
 SHELTER_RUNTIME_DIR="/var/run/shelter"
 SHELTER_DATA_DIR="/var/lib/shelter"
 
+# Indicate whether the stage resource should be destroyed
 SHELTER_CLEAN_FLAG="false"
 
 ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup" "kbs-client")
@@ -447,7 +448,8 @@ build() {
           --build-script="${SHELTER_DISK_CONF_DIR}/mkosi.build" \
           --finalize-script="${SHELTER_DISK_CONF_DIR}/mkosi.finalize" \
           --postinst-script="${SHELTER_DISK_CONF_DIR}/mkosi.postinst" \
-          --output-dir="${SHELTER_IMAGE_DIR}" --output="$(basename ${SHELTER_DISK})" \
+          --output-dir="${SHELTER_IMAGE_DIR}" \
+          --output="$(basename ${SHELTER_DISK})" \
           --extra-tree="${SHELTER_EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
           --passphrase="${SHELTER_PASSPHRASE}" \
@@ -570,7 +572,7 @@ EOF
         opts+=" -drive file='${SHELTER_DISK}',format=raw,if=virtio"
     fi
 
-# port forwarding
+    # port forwarding
     local port_array=()
     local port_maps
     IFS=' ' read -ra port_array <<< "$ports"
@@ -691,7 +693,7 @@ start() {
             exit 1
         fi
 
-        debug "host-guest sharing between $src and $dst"
+        debug "The host-guest is sharing between $src and $dst"
 
         sudo ${SHELTER_BIN_DIR}/virtiofsd \
           --socket-path="${SHELTER_STAGE_DIR}/virtiofs-${virtiofs_nr}.sock" \
@@ -702,9 +704,8 @@ start() {
         virtiofs_nr=$((virtiofs_nr + 1))
     done
 
+    # Work around the zero max_user_namespaces value
     local max_user_ns="$(sudo sysctl --binary --quiet user.max_user_namespaces)"
-
-    # Work around the default zero max_user_namespaces value on apasa
     if [ "${max_user_ns}" = "0" ]; then
         warn "Set user.max_user_namespaces to be 766996 forcibly."
         sudo sysctl --write user.max_user_namespaces=766996
@@ -723,8 +724,8 @@ start() {
         local firmware="$(get_conf ${vmm}.firmware)"
         local opts="$(get_conf ${vmm}.opts)"
 
-        #if image.conf exist, repalase the parameters
-        if [ -s ${SHELTER_IMAGE_CONF} ]; then 
+        # Prefer the parameters from image.conf
+        if [ -s "${SHELTER_IMAGE_CONF}" ]; then
            mem="$(get_image_conf mem)"
            cpus="$(get_image_conf cpus)"
         fi
@@ -735,7 +736,7 @@ start() {
     debug "qemu command: $cmd"
     eval cmd=("$cmd")
 
-    unit_name="shelter_${IMAGE_ID}"
+    local unit_name="shelter_${IMAGE_ID}"
     systemd-run --user --description=Shelter --unit="$unit_name" -p StandardInput=null -G "${cmd[@]}"
     if [ $? -ne 0 ]; then
         error "Failed to run systemd-run to launch qemu."
@@ -803,6 +804,7 @@ status() {
 
 stop() {
     SHELTER_CLEAN_FLAG="true"
+
     if ! is-active; then
         exit 0;
     fi
@@ -815,7 +817,7 @@ stop() {
     local wait_seconds=${SHELTER_TIMEOUT}
     debug "Now waiting ${wait_seconds} seconds for the guest to exit ..."
 
-    for ((i=${wait_seconds}; i>0; i--))
+    for ((_i=${wait_seconds}; _i>0; _i--))
     do
         if ! is-active; then
             debug "Shelter has been smoothly stopped"
@@ -838,15 +840,15 @@ exec() {
         local opts="$@"
         set --
 
-        for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.sock; do
-            f="$(basename $f)"
-            f="${f##*-}"
-            f="${f%.sock}"
+        for _f in "${SHELTER_STAGE_DIR}"/virtiofs-*.sock; do
+            _f="$(basename $_f)"
+            _f="${_f##*-}"
+            _f="${_f%.sock}"
 
             set -- "$@" \
-              "[ ! -d ${VIRTIOFS_MAPPING[${f}]} ] && \
-                   mkdir -p ${VIRTIOFS_MAPPING[${f}]}; \
-                 mount -t virtiofs virtiofs-${f} ${VIRTIOFS_MAPPING[${f}]}; "
+              "[ ! -d ${VIRTIOFS_MAPPING[${_f}]} ] && \
+                   mkdir -p ${VIRTIOFS_MAPPING[${_f}]}; \
+                 mount -t virtiofs virtiofs-${_f} ${VIRTIOFS_MAPPING[${_f}]}; "
         done
 
         debug "Pre-run the commands \"$@\""
@@ -882,7 +884,6 @@ show_images() {
         kernel_hash=`cat ${SHELTER_IMAGE_DIR}/tmp/kernel_hash`
         initrd_size=`cat ${SHELTER_IMAGE_DIR}/tmp/initrd_size`
         create_time=`cat ${SHELTER_IMAGE_DIR}/tmp/create_time`
-
 
         if [ -z "$image_type" ] || [ -z "$initrd_hash" ] || [ -z "$kernel_hash" ];then
              debug "Bad Image, miss some file"
@@ -1009,16 +1010,17 @@ trap_handler() {
 
     if [ ${SHELTER_CLEAN_FLAG} == "true" ]; then 
         debug "Cleaning up ..."
-        systemctl --user stop shelter_${IMAGE_ID}.service 2>/dev/null
-        for f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
-            [ ! -f "$f" ] && continue;
 
-            sudo kill "$(sudo cat ${f})" 2>/dev/null
-            sudo rm -f "${f}"
-            sudo rm -f "${f/.pid/.sock}"
+        systemctl --user stop shelter_${IMAGE_ID}.service 2>/dev/null
+        for _f in "${SHELTER_STAGE_DIR}"/virtiofs-*.pid; do
+            [ ! -f "$_f" ] && continue;
+
+            sudo kill "$(sudo cat ${_f})" 2>/dev/null
+            sudo rm -f "${_f}"
+            sudo rm -f "${_f/.pid/.sock}"
         done
 
-        rm -f "${SHELTER_STAGE_DIR}/cid"
+        sudo rm -f "${SHELTER_STAGE_DIR}/cid"
     fi
 
     exit $err
