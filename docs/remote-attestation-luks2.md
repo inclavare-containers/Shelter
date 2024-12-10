@@ -1,22 +1,20 @@
-# 通过remote attestation获取luks2的passphrase
+# 通过remote attestation获取LUKS2的passphrase
 
-# kbs-client参数配置
+## 使用步骤
 
-利用linux kernel的非内核设置参数的kernl cmdline会作为环境变量传给init进程的feature来配置`kbs-client get-resource`的`url`和`path`。
+上传解密加密卷的passphrase(密码):
 
-# 示例
-
-上传机密资源
 ~~~bash
-kbs-client config --auth-private-key ~/kbs/private.key set-resource --resource-file /var/lib/shelter/images/default/passphrase --path default/test/passphrase
+kbs-client \
+  config \
+   --auth-private-key ~/kbs/private.key \
+  set-resource \
+   --resource-file /var/lib/shelter/images/default/passphrase \
+   --path default/test/passphrase
 ~~~
 
-qemu示例启动命令:
-~~~bash
-qemu-system-x86_64 -accel kvm -m 4g -kernel kernel -initrd initrd --device vhost-vsock-pci,guest-cid=21 -drive file=disk,format=raw,if=virtio --device virtio-net-pci,netdev=net0 -netdev user,id=net0 --append "loglevel=9 panic=0  KBS_URL=http://kbs_address:8081 PASSPHRASE_PATH=default/test/passphrase"
-~~~
+Guest中的init进程通过Guest内核命令行参数来获得访问KBS的URL和passphrase路径信息，因此需要事先配置好shelter.conf:
 
-shelter.conf示例文件
 ~~~toml
 image_type = "disk"
 vmm = "qemu"
@@ -26,10 +24,25 @@ bin = "/usr/libexec/qemu-kvm"
 mem = "4G"
 cpus = "2"
 firmware =""
-kern_cmdline = "KBS_URL=http://192.168.10.51:8080 PASSPHRASE_PATH=default/test/passphrase"
+kern_cmdline = "KBS_URL=http://$kbs_address:$kbs_port PASSPHRASE_PATH=default/test/passphrase"
 opts = ""
 ~~~
 
-**kbs_address不要填写本地环回地址**
+## 注意事项
 
-**每次shelter build镜像后都需要重新上传passphrase**
+- 由于每次运行shelter build构建出的加密镜像时使用的passphrase都是随机生成的，因此需要给KBS重新上传新的passphrase。
+
+## 备注
+
+独立通过qemu来运行通过remote attestation获取LUKS2 passphrase的参考命令:
+
+~~~bash
+qemu-system-x86_64 \
+ -accel kvm -m 4g -kernel kernel -initrd initrd \
+ --device vhost-vsock-pci,guest-cid=21 \
+ -drive file=disk,format=raw,if=virtio \
+ --device virtio-net-pci,netdev=net0 \
+ -netdev user,id=net0 --append "loglevel=9 panic=0 \
+  KBS_URL=http://$kbs_address:$kbs_port \
+  PASSPHRASE_PATH=$path_to_passphrase"
+~~~
