@@ -1,17 +1,17 @@
 insecure_http = true
 insecure_api = true
-sockets = ["127.0.0.1:8080"]
-auth_public_key = "/tmp/kbs/public.pub"
+sockets = ["KBS_ADDRESS:KBS_PORT"]
+auth_public_key = "/usr/local/libexec/shelter/kbs/public.pub"
 
 [attestation_token_config]
 attestation_token_type = "CoCo"
 
 [repository_config]
 type = "LocalFs"
-dir_path = "/tmp/kbs/repository"
+dir_path = "/usr/local/libexec/shelter/kbs/repository"
 
 [as_config]
-work_dir = "/tmp/kbs/attestation-service"
+work_dir = "/usr/local/libexec/shelter/kbs/attestation-service"
 policy_engine = "opa"
 attestation_token_broker = "Simple"
 
@@ -23,4 +23,4 @@ store_type = "LocalFs"
 remote_addr = ""
 
 [policy_engine_config]
-policy_path = "/tmp/kbs/allow_all.rego"
+policy_path = "/usr/local/libexec/shelter/kbs/policy.rego"

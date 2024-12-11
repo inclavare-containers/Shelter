@@ -437,7 +437,9 @@ build() {
             exit 1
         fi
     elif [ "$image_type" = "disk" ]; then
-        create_passphrase
+        if [ ! -s "${SHELTER_PASSPHRASE}" ]; then
+            create_passphrase
+        fi
 
         debug "Building Disk image: ${SHELTER_DISK}"
 

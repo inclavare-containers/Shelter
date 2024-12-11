@@ -268,26 +268,32 @@ endif
 	    sudo install -m 0755 shelter.hygon.conf "$(CONFIG)"; \
 	fi
 
+	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/repository"
+	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/attestation-service"
+	@sudo install -m 0755 kbs/policy.rego "$(PREFIX)/libexec/shelter/kbs"
+	@sudo install -m 0755 kbs/config.toml.template "$(PREFIX)/libexec/shelter/kbs"
+	@sudo install -m 0755 start-kbs.sh "$(PREFIX)/bin"
+
 ifeq ($(IS_DEBIAN), true)
 	@install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/libexec/shelter"
 	@install -D -m 0755 libexec/debian/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
 	@install -D -m 0755 libexec/debian/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
 	@install -D -m 0755 libexec/debian/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libsystemd-shared-256.so"
 	@install -D -m 0755 libexec/debian/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0"
-	@install -D -s -m 0755 libexec/debian/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
-	@install -D -s -m 0755 libexec/debian/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
+	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
+	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
 	@install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
-	@install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter"
+	@install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter/kbs"
 else ifeq ($(IS_DEBIAN), false)
 	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
 	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
 	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
 	@install -D -m 0755 libexec/redhat/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libsystemd-shared-256.so"
 	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0"
-	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
-	@install -D -s -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
+	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
+	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
 	@install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/libexec/shelter"
-	@install -m 0755 libexec/redhat/kbs "$(PREFIX)/libexec/shelter"
+	@install -m 0755 libexec/redhat/kbs "$(PREFIX)/libexec/shelter/kbs"
 endif
 
 ifeq ($(IS_APSARA), true)
@@ -296,7 +302,7 @@ endif
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
-	  sudo rm -f shelter; \
+	  sudo rm -f shelter start-kbs.sh; \
 	} || true
 
 	@sudo rm -rf "$(CONFIG_DIR)"
@@ -317,9 +323,9 @@ test: # Run verify-signature demo with shelter
 
 	@echo -e "\033[1;31mRunning the DEMO verify-signature in shelter guest ...\033[0m"
 	@./shelter build -t shelter-demos -c ./demos/verify-signature/build.conf && \
-	  ./demos/verify-signature/kbs.sh && \
+	  PASSPHRASE="/var/lib/shelter/images/shelter-demos/passphrase" ./start-kbs.sh && \
 	  ./shelter run \
-	    -c /tmp/kbs/shelter.conf \
+	    -c "$(PREFIX)/libexec/shelter/kbs/shelter.conf" \
 		-v demos/verify-signature/payload:/payload \
 		shelter-demos \
 	    verifier.sh \

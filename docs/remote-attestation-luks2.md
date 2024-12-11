@@ -9,8 +9,8 @@ kbs-client \
   config \
    --auth-private-key ~/kbs/private.key \
   set-resource \
-   --resource-file /var/lib/shelter/images/default/passphrase \
-   --path default/test/passphrase
+   --resource-file /var/lib/shelter/images/$IMAGE_ID/passphrase \
+   --path default/$IMAGE_ID/passphrase
 ~~~
 
 Guest中的init进程通过Guest内核命令行参数来获得访问KBS的URL和passphrase路径信息，因此需要事先配置好shelter.conf:
@@ -24,13 +24,9 @@ bin = "/usr/libexec/qemu-kvm"
 mem = "4G"
 cpus = "2"
 firmware =""
-kern_cmdline = "KBS_URL=http://$kbs_address:$kbs_port PASSPHRASE_PATH=default/test/passphrase"
+kern_cmdline = "KBS_URL=http://$KBS_ADDRESS:$KBS_PORT PASSPHRASE_PATH=default/$IMAGE_ID/passphrase"
 opts = ""
 ~~~
-
-## 注意事项
-
-- 由于每次运行shelter build构建出的加密镜像时使用的passphrase都是随机生成的，因此需要给KBS重新上传新的passphrase。
 
 ## 备注
 
@@ -43,6 +39,6 @@ qemu-system-x86_64 \
  -drive file=disk,format=raw,if=virtio \
  --device virtio-net-pci,netdev=net0 \
  -netdev user,id=net0 --append "loglevel=9 panic=0 \
-  KBS_URL=http://$kbs_address:$kbs_port \
+  KBS_URL=http://$KBS_ADDRESS:$KBS_PORT \
   PASSPHRASE_PATH=$path_to_passphrase"
 ~~~
