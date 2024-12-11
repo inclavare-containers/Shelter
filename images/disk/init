@@ -29,7 +29,9 @@ mdev -d || mdev -s
 ip link set eth0 up
 udhcpc -s /usr/share/udhcpc/default.script
 
-kbs-client --url $KBS_URL get-resource --path $PASSPHRASE_PATH | base64 -d | cryptsetup open -d - /dev/vda1 root
+if grep -q "KBS_URL=" /proc/cmdline && grep -q "PASSPHRASE_PATH=" /proc/cmdline; then
+    kbs-client --url $KBS_URL get-resource --path $PASSPHRASE_PATH | base64 -d | cryptsetup open -d - /dev/vda1 root
+fi
 
 if [ $? -ne 0 ]; then
     echo "luks2 open failed!!"

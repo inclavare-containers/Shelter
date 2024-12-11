@@ -31,7 +31,9 @@ acpid
 ip link set eth0 up
 udhcpc -s /usr/share/udhcpc/default.script
 
-kbs-client --url $KBS_URL attest || poweroff
+if grep -q "KBS_URL=" /proc/cmdline; then
+    kbs-client --url $KBS_URL attest || poweroff
+fi
 
 socat -t 3600 vsock-listen:4321,reuseaddr,fork "exec:'xargs --no-run-if-empty -0 sh -c',stderr" &
 
