@@ -328,7 +328,10 @@ test: # Run verify-signature demo with shelter
 	@ls -l demos libexec
 
 	@echo -e "\033[1;31mRunning the DEMO mount in shelter guest ...\033[0m"
-	@./shelter run shelter-demos -v demos:/root/demos -v libexec:/root/libexec \
+	@./shelter run \
+	  -v demos:/root/demos -v libexec:/root/libexec \
+	  -c /tmp/kbs/shelter.conf \
+	  shelter-demos \
 	  ls -l /root/demos /root/libexec
 
 	@./demos/verify-signature/kbs.sh
