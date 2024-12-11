@@ -20,7 +20,7 @@ systemd-run --user --description="KBS Testing Server" --unit="kbs" \
   -G /usr/local/libexec/shelter/kbs -c /tmp/kbs/config.toml && \
     echo "KBS service started"
 
-sed '/kern_cmdline =/ s/"$/ KBS_URL=http:\/\/10.0.2.2:8080 PASSPHRASE_PATH=default\/shelter-demo\/passphrase"/' /etc/shelter.conf > /tmp/kbs/shelter.conf
+sed '/kern_cmdline =/ s/"$/ KBS_URL=http:\/\/10.0.2.2:8080 PASSPHRASE_PATH=default\/shelter-demos\/passphrase"/' /etc/shelter.conf > /tmp/kbs/shelter.conf
 
 if [ "$(toml get --toml-path /var/lib/shelter/images/shelter-demos/image_info.toml image_type)" = "disk" ]; then
     sleep 5
