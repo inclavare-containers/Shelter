@@ -318,23 +318,14 @@ test: # Run verify-signature demo with shelter
 	@echo -e "\033[1;31mRunning the DEMO verify-signature in shelter guest ...\033[0m"
 	@./shelter build -t shelter-demos -c ./demos/verify-signature/build.conf && \
 	  ./demos/verify-signature/kbs.sh && \
-	  ./shelter run -c /tmp/kbs/shelter.conf shelter-demos \
+	  ./shelter run \
+	    -c /tmp/kbs/shelter.conf \
+		-v demos/verify-signature/payload:/payload \
+		shelter-demos \
 	    verifier.sh \
 	      /keys/public_key.pem \
 	      /payload/archive.tar.gz.sig \
 	      /payload/archive.tar.gz
-
-	@echo -e "\033[1;31mRunning the DEMO mount on host ...\033[0m"
-	@ls -l demos libexec
-
-	@echo -e "\033[1;31mRunning the DEMO mount in shelter guest ...\033[0m"
-	@./shelter run \
-	  -v demos:/root/demos -v libexec:/root/libexec \
-	  -c /tmp/kbs/shelter.conf \
-	  shelter-demos \
-	  ls -l /root/demos /root/libexec
-
-	@./demos/verify-signature/kbs.sh
 
 all: # Equivalent to make prepare build install
 	@make prepare build install
