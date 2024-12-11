@@ -23,8 +23,6 @@ systemd-run --user --description="KBS Testing Server" --unit="kbs" \
 sed '/kern_cmdline =/ s/"$/ KBS_URL=http:\/\/10.0.2.2:8080 PASSPHRASE_PATH=default\/shelter-demos\/passphrase"/' /etc/shelter.conf > /tmp/kbs/shelter.conf
 
 if [ "$(toml get --toml-path /var/lib/shelter/images/shelter-demos/image_info.toml image_type)" = "disk" ]; then
-    sleep 5
-
     /usr/local/libexec/shelter/kbs-client \
       config --auth-private-key /tmp/kbs/private.key \
       set-resource \
