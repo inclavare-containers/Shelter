@@ -496,18 +496,20 @@ build() {
 }
 
 store_image_info() {
-    key="$1"
-    value="$2"
+    local key="$1"
+    local value="$2"
 
-    if [ ! -s ${SHELTER_IMAGE_DIR}/image_info.toml ];then 
-        touch ${SHELTER_IMAGE_DIR}/image_info.toml
-    fi 
-    toml set  ${key} ${value} --toml-path=${SHELTER_IMAGE_DIR}/image_info.toml
+    if [ ! -s "${SHELTER_IMAGE_DIR}/image_info.toml" ]; then
+        touch "${SHELTER_IMAGE_DIR}/image_info.toml"
+    fi
+
+    toml set "${key}" "${value}" --toml-path="${SHELTER_IMAGE_DIR}/image_info.toml"
 }
 
 get_image_info() {
-    key="$1"
-    toml get --toml-path ${SHELTER_IMAGE_DIR}/image_info.toml "${key}"
+    local key="$1"
+
+    toml get --toml-path "${SHELTER_IMAGE_DIR}/image_info.toml" "${key}"
 }
 
 get_conf() {
