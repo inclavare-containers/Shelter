@@ -43,22 +43,16 @@ FORCE:
 
 prepare: # Install the build and runtime dependencies (network access required)
 ifeq ($(IS_DEBIAN), false)
-	@makefile_deps="coreutils grep gawk sudo which git curl python3-pip \
-	                python3-pysocks which findutils util-linux +podman-docker \
-	                make gperf autoconf automake pkgconf-pkg-config libtool \
-	                meson cmake libseccomp-devel libcap-ng-devel glib2-devel \
-	                cryptsetup-devel gettext-devel openssl-devel popt-devel \
-	                device-mapper-devel libuuid-devel json-c-devel \
-	                libblkid-devel libssh-devel libcap-devel libmount-devel \
-	                libfdisk-devel libgcrypt-devel perl-IPC-Cmd protobuf-compiler"; \
-	shelter_build_deps="sudo +python3.11 which diffutils rsync sed systemd \
-	                    socat +busybox kmod cryptsetup bubblewrap kernel-core \
-	                    qemu-kvm zstd libuuid device-mapper-libs openssl-libs \
-	                    json-c libblkid libselinux libsepol systemd-libs zlib \
-	                    pcre2 libmount libfdisk"; \
-	shelter_run_deps="sudo diffutils rsync sed systemd socat +busybox kmod \
-	                  cryptsetup bubblewrap qemu-kvm glib2"; \
-	demos_deps="tar openssl"; \
+	@make_all_deps="coreutils grep gawk sudo python3-pip python3-pysocks \
+	                util-linux"; \
+	make_extra_deps="git +podman-docker coreutils"; \
+	shelter_build_deps="coreutils gawk diffutils rsync glibc-common file \
+	                    grep sed which socat +busybox kmod cryptsetup"; \
+	mkosi_deps="+python3.11 bubblewrap kernel-core cryptsetup coreutils \
+	            rsync"; \
+	shelter_run_deps="coreutils sudo procps-ng gawk systemd socat qemu-kvm \
+	                  glib2 util-linux"; \
+	make_test_deps="coreutils tar openssl"; \
 	install_pkg() { \
 	  for p in "$$@"; do \
 	    local _p="$$p"; \
@@ -78,24 +72,21 @@ ifeq ($(IS_DEBIAN), false)
 	  done; \
 	}; \
 	sudo true && \
-	  install_pkg $${makefile_deps} $${shelter_build_deps} \
-	    $${shelter_run_deps} $${demos_deps}
+	  install_pkg $${make_all_deps} $${make_test_deps} $${make_extra_deps} \
+	    $${shelter_build_deps} $${mkosi_deps} $${shelter_run_deps}
 else
-	@makefile_deps="apt-utils coreutils grep gawk sudo git curl python3-pip \
-	                python3-socks findutils util-linux make gperf autoconf \
-	                automake pkg-config libtool meson cmake libseccomp-dev \
-	                libcap-ng-dev libglib2.0-dev libcryptsetup-dev \
-	                libpopt-dev libdevmapper-dev uuid-dev libjson-c-dev \
-	                libblkid-dev libssh-dev libcap-dev libmount-dev \
-	                libfdisk-dev libgcrypt-dev protobuf-compiler"; \
+	@make_all_deps="apt-utils coreutils grep gawk sudo python3-pip \
+	                python3-socks util-linux"; \
+	make_extra_deps="git coreutils"; \
 	shelter_build_deps="sudo diffutils rsync sed systemd socat busybox-static \
 	                    kmod cryptsetup bubblewrap zstd libuuid1 \
 	                    libdevmapper1.02.1 libssl3 libcrypt1 libjson-c5 \
 	                    libblkid1 libselinux1 libcap2 libpcre2-8-0 libmount1 \
 	                    libfdisk1"; \
+	mkosi_deps="python3 bubblewrap cryptsetup coreutils rsync"; \
 	shelter_run_deps="sudo diffutils rsync sed systemd socat busybox-static kmod \
 	                  cryptsetup bubblewrap qemu-system-x86"; \
-	demos_deps="tar openssl"; \
+	make_test_deps="coreutils tar openssl"; \
 	install_pkg() { \
 	  for p in "$$@"; do \
 	    local _p="$$p"; \
@@ -114,8 +105,8 @@ else
 	  done; \
 	}; \
 	sudo apt update && \
-	  install_pkg $${makefile_deps} $${shelter_build_deps} \
-	    $${shelter_run_deps} $${demos_deps}
+	  install_pkg $${make_all_deps} $${make_test_deps} $${make_extra_deps} \
+	    $${shelter_build_deps} $${mkosi_deps} $${shelter_run_deps}
 endif
 
 ifeq ($(IS_APSARA), true)
