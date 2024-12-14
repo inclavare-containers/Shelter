@@ -21,9 +21,11 @@ fi
 # 10.0.2.2 indicates the gateway/host IP used in QEMU user network SLIRP
 pattern="/kern_cmdline =/ s/\"$/ ${kbs_cmdline}\"/"
 if [ "$KBS_ADDRESS" != "10.0.2.2" ]; then
-    sed "/sockets =/ s/KBS_ADDRESS:KBS_PORT/${KBS_ADDRESS}:${KBS_PORT}/" "$KBS_DIR/config.toml.template" > "$KBS_DIR/config.toml"
+    listen_address=0.0.0.0
+    sed "/sockets =/ s/KBS_ADDRESS:KBS_PORT/${listen_address}:${KBS_PORT}/" "$KBS_DIR/config.toml.template" > "$KBS_DIR/config.toml"
 else
-    sed "/sockets =/ s/KBS_ADDRESS:KBS_PORT/127.0.0.1:${KBS_PORT}/" "$KBS_DIR/config.toml.template" > "$KBS_DIR/config.toml"
+    listen_address=127.0.0.1
+    sed "/sockets =/ s/KBS_ADDRESS:KBS_PORT/${listen_address}:${KBS_PORT}/" "$KBS_DIR/config.toml.template" > "$KBS_DIR/config.toml"
 fi
 
 systemd-run --user --description="KBS Server" --unit="kbs" \
@@ -37,6 +39,7 @@ if [ -s "${PASSPHRASE}" ]; then
     sleep 5
 
     ${KBS_DIR}/../kbs-client \
+      --url http://${listen_address}:${KBS_PORT} \
       config --auth-private-key "${KBS_DIR}/private.key" \
       set-resource \
         --resource-file "${PASSPHRASE}" \
