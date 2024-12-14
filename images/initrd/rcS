@@ -14,7 +14,7 @@ mkdir /dev/pts
 mount -t devpts devpts /dev/pts
 
 if [ -e /proc/sys/kernel/hotplug ]; then
-    echo `which mdev` > /proc/sys/kernel/hotplug
+    which mdev > /proc/sys/kernel/hotplug
 fi
 mdev -d || mdev -s
 
