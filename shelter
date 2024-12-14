@@ -35,7 +35,6 @@ SHELTER_IMAGE_DIR="${SHELTER_DATA_DIR}/images/${IMAGE_ID}"
 SHELTER_INITRD="${SHELTER_IMAGE_DIR}/initrd"
 SHELTER_KERNEL="${SHELTER_IMAGE_DIR}/kernel"
 SHELTER_DISK="${SHELTER_IMAGE_DIR}/disk"
-SHELTER_PASSPHRASE="${SHELTER_IMAGE_DIR}/passphrase"
 SHELTER_IMAGE_CONF="${SHELTER_IMAGE_DIR}/shelter.conf"
 SHELTER_EXTRA_DIR="${SHELTER_IMAGE_DIR}/extra"
 SHELTER_BUILD_CONF="${SHELTER_IMAGE_DIR}/build.conf"
@@ -73,13 +72,6 @@ randomize() {
     done
 }
 
-create_passphrase() {
-    debug "Creating LUKS passphrase"
-
-    dd if=/dev/urandom of=${SHELTER_PASSPHRASE} bs=1K count=1
-    chmod 600 ${SHELTER_PASSPHRASE}
-}
-
 create_dir() {
     local dir_path="$1"
 
@@ -98,7 +90,6 @@ set_image_dir() {
     SHELTER_INITRD="${SHELTER_IMAGE_DIR}/initrd"
     SHELTER_KERNEL="${SHELTER_IMAGE_DIR}/kernel"
     SHELTER_DISK="${SHELTER_IMAGE_DIR}/disk"
-    SHELTER_PASSPHRASE="${SHELTER_IMAGE_DIR}/passphrase"
     SHELTER_IMAGE_CONF="${SHELTER_IMAGE_DIR}/shelter.conf"
     SHELTER_EXTRA_DIR="${SHELTER_IMAGE_DIR}/extra"
 
@@ -248,6 +239,7 @@ build() {
     # The default image id is "default"
     local image_id="default"
     local build_conf="${SHELTER_BUILD_CONF}"
+    local passphrase=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -275,6 +267,10 @@ build() {
                 ;;
             -t|--tag)
                 image_id="$2"
+                shift
+                ;;
+            -P|--passphrase)
+                passphrase="$2"
                 shift
                 ;;
             *)
@@ -345,7 +341,7 @@ build() {
 
     # Add the essential binaries
     for _f in "${ESSENTIAL_BINARIES[@]}"; do
-        local f="$(which $_f 2>/dev/null)"
+        local f="$(command -v $_f)"
         [ -z "$f" ] && f="${SHELTER_BIN_DIR}/$_f"
 
         debug "Copying essential binary $f ..."
@@ -437,8 +433,19 @@ build() {
             exit 1
         fi
     elif [ "$image_type" = "disk" ]; then
-        if [ ! -s "${SHELTER_PASSPHRASE}" ]; then
-            create_passphrase
+        local new_p=0
+
+        if [ -z "${passphrase}" ]; then
+            debug "Creating LUKS passphrase"
+
+            # Randomly generate the path of passphrase file
+            local p="$(mktemp -d /tmp/XXXXXX)"
+            passphrase="$(mktemp $p/XXXXXX)"
+            dd if=/dev/urandom of=${passphrase} bs=1K count=1
+            chmod 600 "${passphrase}"
+            # Print the content of passphrase in base64 encoding
+            cat "${passphrase}" | base64
+            new_p=1
         fi
 
         debug "Building Disk image: ${SHELTER_DISK}"
@@ -454,11 +461,13 @@ build() {
           --output="$(basename ${SHELTER_DISK})" \
           --extra-tree="${SHELTER_EXTRA_DIR}:/extra" \
           --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
-          --passphrase="${SHELTER_PASSPHRASE}" \
+          --passphrase="${passphrase}" \
           --repart-dir="${SHELTER_DISK_CONF_DIR}/mkosi.repart" \
           --extra-search-path="${SHELTER_BIN_DIR}/systemd/bin" \
           build
-        if [ $? -ne 0 ]; then
+        local r=$?
+        [ ${new_p} -eq 1 ] && rm -f "${passphrase}"
+        if [ $r -ne 0 ]; then
             error "Error: failed to build disk image with mkosi"
             exit 1
         fi
