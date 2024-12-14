@@ -47,7 +47,7 @@ ifeq ($(IS_DEBIAN), false)
 	                util-linux"; \
 	make_extra_deps="git +podman-docker coreutils"; \
 	shelter_build_deps="coreutils gawk diffutils rsync glibc-common file \
-	                    grep sed which socat +busybox kmod cryptsetup"; \
+	                    grep sed socat +busybox kmod cryptsetup"; \
 	mkosi_deps="+python3.11 bubblewrap kernel-core cryptsetup coreutils \
 	            rsync"; \
 	shelter_run_deps="coreutils sudo procps-ng gawk systemd socat qemu-kvm \
@@ -124,7 +124,7 @@ endif
 else
 	@sudo pip install toml-cli --proxy=$(HTTPS_PROXY)
 
-	@if ! which docker >/dev/null 2>&1; then \
+	@if ! command -v docker >/dev/null; then \
 	    sudo apt-get install -y docker.io; \
 	fi
 endif
@@ -164,13 +164,13 @@ endif
 build: # Build the necessary components (network access not required)
 ifeq ($(IS_DEBIAN), true)
 	@if [ ! -x "libexec/debian/virtiofsd" -a -d virtiofsd ]; then \
-		! which cargo >/dev/null && source $${HOME}/.cargo/env || true; \
+		! command -v cargo >/dev/null && source $${HOME}/.cargo/env || true; \
 	    cd virtiofsd && cargo build --release && \
 	      cp -f target/release/virtiofsd ../libexec/debian; \
 	fi
 else ifeq ($(IS_DEBIAN), false)
 	@if [ ! -x "libexec/redhat/virtiofsd" -a -d virtiofsd ]; then \
-		! which cargo >/dev/null && source $${HOME}/.cargo/env || true; \
+		! command -v cargo >/dev/null && source $${HOME}/.cargo/env || true; \
 	    cd virtiofsd && cargo build --release && \
 	      cp -f target/release/virtiofsd ../libexec/redhat; \
 	fi
