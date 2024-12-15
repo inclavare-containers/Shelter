@@ -33,7 +33,7 @@ ifeq ($(IS_APSARA), true)
 endif
 
 .PHONE: help FORCE prepare build clean install uninstall test all sync \
-    _build_container container
+    _build_container container install-kbs
 
 help:
 	@grep -E '^[a-zA-Z][a-zA-Z0-9_-]+:.*?# .*$$' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*?# "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -211,7 +211,7 @@ endif
 
 clean: # Clean the build artifacts
 
-install: # Install the build artifacts
+install: install-kbs # Install the build artifacts
 	@sudo install -D -d 0755 "$(CONFIG_DIR)" && \
 	  sudo install -m 0644 00_logger "$(CONFIG_DIR)"; \
 	for d in initrd disk; do \
@@ -259,12 +259,6 @@ endif
 	    sudo install -m 0755 shelter.hygon.conf "$(CONFIG)"; \
 	fi
 
-	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/repository"
-	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/attestation-service"
-	@sudo install -m 0755 kbs/policy.rego "$(PREFIX)/libexec/shelter/kbs"
-	@sudo install -m 0755 kbs/config.toml.template "$(PREFIX)/libexec/shelter/kbs"
-	@sudo install -m 0755 start-kbs.sh "$(PREFIX)/bin"
-
 ifeq ($(IS_DEBIAN), true)
 	@install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/libexec/shelter"
 	@install -D -m 0755 libexec/debian/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
@@ -273,8 +267,6 @@ ifeq ($(IS_DEBIAN), true)
 	@install -D -m 0755 libexec/debian/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0"
 	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
 	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
-	@install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
-	@install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter/kbs"
 else ifeq ($(IS_DEBIAN), false)
 	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
 	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
@@ -283,12 +275,25 @@ else ifeq ($(IS_DEBIAN), false)
 	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0"
 	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
 	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
-	@install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/libexec/shelter"
-	@install -m 0755 libexec/redhat/kbs "$(PREFIX)/libexec/shelter/kbs"
 endif
 
 ifeq ($(IS_APSARA), true)
 #	@$(MAKE) _install_apsara
+endif
+
+install-kbs: # Install the KBS artifacts
+	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/repository"
+	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/attestation-service"
+	@sudo install -m 0755 kbs/policy.rego "$(PREFIX)/libexec/shelter/kbs"
+	@sudo install -m 0755 kbs/config.toml.template "$(PREFIX)/libexec/shelter/kbs"
+	@sudo install -m 0755 start-kbs.sh "$(PREFIX)/bin"
+
+ifeq ($(IS_DEBIAN), true)
+	@install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
+	@install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter/kbs"
+else ifeq ($(IS_DEBIAN), false)
+	@install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/libexec/shelter"
+	@install -m 0755 libexec/redhat/kbs "$(PREFIX)/libexec/shelter/kbs"
 endif
 
 uninstall: # Uninstall the build artifacts
