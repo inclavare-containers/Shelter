@@ -48,9 +48,13 @@ if [ -s "${PASSPHRASE}" ]; then
     kbs_cmdline="$kbs_cmdline PASSPHRASE_PATH=default/shelter/passphrase"
 fi
 
-# Tune into the sed pattern
-pattern="$(echo $kbs_cmdline | sed 's|/|\\/|g')"
-pattern="/kern_cmdline =/ s/\"$/ ${pattern}\"/"
-sed "$pattern" /etc/shelter.conf > "${KBS_DIR}/shelter.conf"
+if ! grep -q KBS_URL= /etc/shelter.conf; then
+    # Tune into the sed pattern
+    pattern="$(echo $kbs_cmdline | sed 's|/|\\/|g')"
+    pattern="/kern_cmdline =/ s/\"$/ ${pattern}\"/"
+    sed "$pattern" /etc/shelter.conf > "${KBS_DIR}/shelter.conf"
+else
+    sed "/kern_cmdline =/ s|KBS_URL=http://[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}:[0-9]\{1,5\}\+|KBS_URL=http://${KBS_ADDRESS}:${KBS_PORT}|" /etc/shelter.conf > "${KBS_DIR}/shelter.conf"
+fi
 
 echo -e "\033[1;31mPlease execute \"shelter run -c ${KBS_DIR}/shelter.conf\", or append \"$kbs_cmdline\" in the \"kern_cmdline\" line in your shelter.conf.\033[0m"
