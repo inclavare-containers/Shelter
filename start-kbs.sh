@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-KBS_DIR=/usr/local/libexec/shelter/kbs
+KBS_DIR="${KBS_DIR:-/usr/local/libexec/shelter/kbs}"
 
 # Stop kbs if launched already
 systemctl --user -q is-active kbs.service && \
