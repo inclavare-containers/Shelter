@@ -214,7 +214,7 @@ store_stage() {
         sudo mkdir -p "${SHELTER_STAGE_DIR}"
     fi
 
-    sudo echo -n "${val}" > "${SHELTER_STAGE_DIR}/${name}"
+    sudo sh -c "echo -n \"${val}\" > \"${SHELTER_STAGE_DIR}/${name}\""
 }
 
 get_stage() {

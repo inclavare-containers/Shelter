@@ -287,6 +287,9 @@ install-kbs: # Install the KBS artifacts
 	@sudo install -m 0755 kbs/policy.rego "$(PREFIX)/libexec/shelter/kbs"
 	@sudo install -m 0755 kbs/config.toml.template "$(PREFIX)/libexec/shelter/kbs"
 	@sudo install -m 0755 start-kbs.sh "$(PREFIX)/bin"
+ifeq ($(IS_APSARA), true)
+	@sudo chmod u+s "$(PREFIX)/libexec/shelter/kbs/kbs"
+endif
 
 ifeq ($(IS_DEBIAN), true)
 	@install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"

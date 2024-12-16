@@ -7,13 +7,13 @@ systemctl --user -q is-active kbs.service && \
     systemctl --user stop kbs
 
 if [ ! -d "${KBS_DIR}" ]; then
-    mkdir -p "${KBS_DIR}"
+    sudo sh -c "mkdir -p \"${KBS_DIR}\""
 fi
 
 [ ! -s "${KBS_DIR}/private.key" ] && \
-    openssl genpkey -algorithm ed25519 > ${KBS_DIR}/private.key
+    sudo sh -c "openssl genpkey -algorithm ed25519 > ${KBS_DIR}/private.key"
 [ ! -s "${KBS_DIR}/public.pub" ] && \
-    openssl pkey -in ${KBS_DIR}/private.key -pubout -out "${KBS_DIR}/public.pub"
+    sudo sh -c "openssl pkey -in ${KBS_DIR}/private.key -pubout -out \"${KBS_DIR}/public.pub\""
 
 [ -z "${KBS_ADDRESS}" ] && KBS_ADDRESS=10.0.2.2
 [ -z "${KBS_PORT}" ] && KBS_PORT=8080
@@ -22,10 +22,10 @@ fi
 pattern="/kern_cmdline =/ s/\"$/ ${kbs_cmdline}\"/"
 if [ "$KBS_ADDRESS" != "10.0.2.2" ]; then
     listen_address=0.0.0.0
-    sed "/sockets =/ s/KBS_ADDRESS:KBS_PORT/${listen_address}:${KBS_PORT}/" "$KBS_DIR/config.toml.template" > "$KBS_DIR/config.toml"
+    sudo sh -c "sed \"/sockets =/ s/KBS_ADDRESS:KBS_PORT/${listen_address}:${KBS_PORT}/\" \"$KBS_DIR/config.toml.template\" > \"$KBS_DIR/config.toml\""
 else
     listen_address=127.0.0.1
-    sed "/sockets =/ s/KBS_ADDRESS:KBS_PORT/${listen_address}:${KBS_PORT}/" "$KBS_DIR/config.toml.template" > "$KBS_DIR/config.toml"
+    sudo sh -c "sed \"/sockets =/ s/KBS_ADDRESS:KBS_PORT/${listen_address}:${KBS_PORT}/\" \"$KBS_DIR/config.toml.template\" > \"$KBS_DIR/config.toml\""
 fi
 
 systemd-run --user --description="KBS Server" --unit="kbs" \
@@ -52,9 +52,9 @@ if ! grep -q KBS_URL= /etc/shelter.conf; then
     # Tune into the sed pattern
     pattern="$(echo $kbs_cmdline | sed 's|/|\\/|g')"
     pattern="/kern_cmdline =/ s/\"$/ ${pattern}\"/"
-    sed "$pattern" /etc/shelter.conf > "${KBS_DIR}/shelter.conf"
+    sudo sh -c "sed \"$pattern\" /etc/shelter.conf > \"${KBS_DIR}/shelter.conf\""
 else
-    sed "/kern_cmdline =/ s|KBS_URL=http://[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}:[0-9]\{1,5\}\+|KBS_URL=http://${KBS_ADDRESS}:${KBS_PORT}|" /etc/shelter.conf > "${KBS_DIR}/shelter.conf"
+    sudo sh -c "sed \"/kern_cmdline =/ s|KBS_URL=http://[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}:[0-9]\{1,5\}\+|KBS_URL=http://${KBS_ADDRESS}:${KBS_PORT}|\" /etc/shelter.conf > \"${KBS_DIR}/shelter.conf\""
 fi
 
 echo -e "\033[1;31mPlease execute \"shelter run -c ${KBS_DIR}/shelter.conf\", or append \"$kbs_cmdline\" in the \"kern_cmdline\" line in your shelter.conf.\033[0m"
