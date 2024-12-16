@@ -9,10 +9,8 @@ SHELL := /bin/bash
 IS_DEBIAN := $(shell \
     if [ -s "/etc/debian_version" ]; then \
         echo true; \
-    elif [ -e "/etc/redhat-release" ]; then \
-        echo false; \
     else \
-        echo unknown; \
+        echo false; \
     fi)
 
 ifeq ($(IS_DEBIAN), false)
