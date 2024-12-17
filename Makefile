@@ -319,8 +319,13 @@ test: # Run verify-signature demo with shelter
 	  ./demos/verify-signature/payload/archive.tar.gz
 
 	@echo -e "\033[1;31mRunning the DEMO verify-signature in shelter guest ...\033[0m"
-	@./shelter build -t shelter-demos -c ./demos/verify-signature/build.conf && \
-	  PASSPHRASE="/var/lib/shelter/images/shelter-demos/passphrase" ./start-kbs.sh && \
+	@p="$$(mktemp)"; echo -n "Test" > "$$p"; \
+	  ./shelter build \
+	    -t shelter-demos \
+	    -c ./demos/verify-signature/build.conf \
+		-T disk \
+	    -P "$$p" && \
+	  PASSPHRASE="$$p" ./start-kbs.sh && \
 	  ./shelter run \
 	    -c "$(PREFIX)/libexec/shelter/kbs/shelter.conf" \
 		-v demos/verify-signature/payload:/payload \
@@ -328,7 +333,8 @@ test: # Run verify-signature demo with shelter
 	    verifier.sh \
 	      /keys/public_key.pem \
 	      /payload/archive.tar.gz.sig \
-	      /payload/archive.tar.gz
+	      /payload/archive.tar.gz; \
+	  rm -f "$$p"
 
 all: # Equivalent to make prepare build install
 	@make prepare build install
