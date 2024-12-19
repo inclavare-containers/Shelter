@@ -615,7 +615,6 @@ start() {
     local volumes=()
     local ports=()
     local conf="${SHELTER_CONF}"
-    local image_checked="false"
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -649,19 +648,21 @@ start() {
                     return 1
                 fi
                 ;;
-            # Gather the commands to run
             *)
-                if [ "$image_checked" == "true" ]; then
-                    opts+=("$1")
-                else
-                    # Check whether the image id is specified
-                    if ! prepre_image "$1"; then
-                        opts+=("$1")
-                    fi
-                    image_checked="true"
-                fi
+                break
                 ;;
         esac
+        shift
+    done
+
+    # Check whether the image id is specified
+    if prepre_image "$1"; then
+        shift
+    fi
+
+    # Gather the commands to run
+    while [ "$#" -gt 0 ]; do
+        opts+=("$1")
         shift
     done
 
