@@ -48,7 +48,7 @@ file=($d/config.toml:/kbs/config.toml $d/policy.rego:/kbs/policy.rego $d/public.
 EOF
 
 shelter build \
-  -t kbs \
+  -t kbs-demo \
   -c "$d/build.conf" \
   -T initrd
 
@@ -63,7 +63,7 @@ fi
 shelter run \
   -c "$conf" \
   -p ${KBS_PORT}:${KBS_PORT} \
-  kbs \
+  kbs-demo \
     /sbin/kbs -c /kbs/config.toml &
 
 cat >"$d/passphrase.b64" <<EOF
@@ -101,7 +101,7 @@ ${KBS_DIR}/../kbs-client \
     --resource-file "$d/passphrase" \
     --path default/shelter/passphrase
 
-shelter stop kbs
+shelter stop kbs-demo
 
 # TODO: use shred -u to delete
 rm -rf "$d"
