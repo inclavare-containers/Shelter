@@ -323,7 +323,7 @@ test: # Run verify-signature demo with shelter
 	  ./shelter build \
 	    -t shelter-demos \
 	    -c ./demos/verify-signature/build.conf \
-		-T disk \
+	    -T disk \
 	    -P "$$p" && \
 	  PASSPHRASE="$$p" ./start-kbs.sh && \
 	  ./shelter run \
