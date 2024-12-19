@@ -16,7 +16,7 @@ fi
     sudo sh -c "openssl pkey -in ${KBS_DIR}/private.key -pubout -out \"${KBS_DIR}/public.pub\""
 
 [ -z "${KBS_ADDRESS}" ] && KBS_ADDRESS=10.0.2.2
-[ -z "${KBS_PORT}" ] && KBS_PORT=8080
+[ -z "${KBS_PORT}" ] && KBS_PORT=6773
 
 # 10.0.2.2 indicates the gateway/host IP used in QEMU user network SLIRP
 pattern="/kern_cmdline =/ s/\"$/ ${kbs_cmdline}\"/"
@@ -46,6 +46,10 @@ if [ -s "${PASSPHRASE}" ]; then
         --path default/shelter/passphrase
 
     kbs_cmdline="$kbs_cmdline PASSPHRASE_PATH=default/shelter/passphrase"
+fi
+
+if [ ! -s /etc/shelter.conf ]; then
+    exit 0
 fi
 
 if ! grep -q KBS_URL= /etc/shelter.conf; then
