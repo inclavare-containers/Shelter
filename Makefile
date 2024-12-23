@@ -44,12 +44,13 @@ ifeq ($(IS_DEBIAN), false)
 	@make_all_deps="coreutils grep gawk sudo python3-pip python3-pysocks \
 	                util-linux"; \
 	make_extra_deps="git +podman-docker coreutils"; \
+	shelter_kbs_deps="coreutils grep sed +cloudbox openssl vim-common"; \
 	shelter_build_deps="coreutils gawk diffutils rsync glibc-common file \
 	                    grep sed socat +busybox kmod cryptsetup"; \
 	mkosi_deps="+python3.11 bubblewrap kernel-core cryptsetup coreutils \
 	            rsync"; \
 	shelter_run_deps="coreutils sudo procps-ng gawk systemd socat qemu-kvm \
-	                  glib2 util-linux"; \
+	                  glib2 util-linux vim-common +cloudbox bc openssl"; \
 	make_test_deps="coreutils tar openssl"; \
 	install_pkg() { \
 	  for p in "$$@"; do \
@@ -71,11 +72,13 @@ ifeq ($(IS_DEBIAN), false)
 	}; \
 	sudo true && \
 	  install_pkg $${make_all_deps} $${make_test_deps} $${make_extra_deps} \
-	    $${shelter_build_deps} $${mkosi_deps} $${shelter_run_deps}
+	    $${shelter_kbs_deps} $${shelter_build_deps} $${mkosi_deps} \
+	    $${shelter_run_deps}
 else
 	@make_all_deps="apt-utils coreutils grep gawk sudo python3-pip \
 	                python3-socks util-linux"; \
 	make_extra_deps="git coreutils"; \
+	shelter_kbs_deps="coreutils grep sed +cloudbox openssl vim-common"; \
 	shelter_build_deps="sudo diffutils rsync sed systemd socat busybox-static \
 	                    kmod cryptsetup bubblewrap zstd libuuid1 \
 	                    libdevmapper1.02.1 libssl3 libcrypt1 libjson-c5 \
@@ -83,7 +86,7 @@ else
 	                    libfdisk1"; \
 	mkosi_deps="python3 bubblewrap cryptsetup coreutils rsync"; \
 	shelter_run_deps="sudo diffutils rsync sed systemd socat busybox-static kmod \
-	                  cryptsetup bubblewrap qemu-system-x86"; \
+	                  cryptsetup bubblewrap qemu-system-x86 vim-common"; \
 	make_test_deps="coreutils tar openssl"; \
 	install_pkg() { \
 	  for p in "$$@"; do \
@@ -104,7 +107,8 @@ else
 	}; \
 	sudo apt update && \
 	  install_pkg $${make_all_deps} $${make_test_deps} $${make_extra_deps} \
-	    $${shelter_build_deps} $${mkosi_deps} $${shelter_run_deps}
+	    $${shelter_kbs_deps} $${shelter_build_deps} $${mkosi_deps} \
+	    $${shelter_run_deps}
 endif
 
 ifeq ($(IS_APSARA), true)
@@ -238,6 +242,7 @@ install: install-kbs # Install the build artifacts
 	@sudo install -D -m 0755 images/disk/init $(CONFIG_DIR)/disk
 
 	@sudo install -D -m 0755 shelter "$(PREFIX)/bin"
+	@sudo install -m 0755 kbs/shelter/encp-decoder "$(PREFIX)/libexec/shelter"
 
 ifeq ($(IS_DEBIAN), true)
 	@sudo install -m 0755 shelter.debian.conf "$(CONFIG)"
@@ -258,21 +263,21 @@ endif
 	fi
 
 ifeq ($(IS_DEBIAN), true)
-	@install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/libexec/shelter"
-	@install -D -m 0755 libexec/debian/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
-	@install -D -m 0755 libexec/debian/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
-	@install -D -m 0755 libexec/debian/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libsystemd-shared-256.so"
-	@install -D -m 0755 libexec/debian/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0"
-	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
-	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
+	@sudo install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/libexec/shelter"
+	@sudo install -D -m 0755 libexec/debian/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
+	@sudo install -D -m 0755 libexec/debian/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
+	@sudo install -D -m 0755 libexec/debian/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libsystemd-shared-256.so"
+	@sudo install -D -m 0755 libexec/debian/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0"
+	@sudo ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
+	@sudo ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
 else ifeq ($(IS_DEBIAN), false)
-	@install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
-	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
-	@install -D -m 0755 libexec/redhat/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
-	@install -D -m 0755 libexec/redhat/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libsystemd-shared-256.so"
-	@install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0"
-	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
-	@ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
+	@sudo install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
+	@sudo install -D -m 0755 libexec/redhat/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
+	@sudo install -D -m 0755 libexec/redhat/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
+	@sudo install -D -m 0755 libexec/redhat/systemd/lib64/libsystemd-shared-256.so "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libsystemd-shared-256.so"
+	@sudo install -D -m 0755 libexec/redhat/cryptsetup/lib/libcryptsetup.so.12.10.0 "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0"
+	@sudo ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12"
+	@sudo ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib64/systemd/libcryptsetup.so"
 endif
 
 ifeq ($(IS_APSARA), true)
@@ -288,14 +293,19 @@ install-kbs: # Install the KBS artifacts
 ifeq ($(IS_APSARA), true)
 	@sudo chmod u+s "$(PREFIX)/libexec/shelter/kbs/kbs"
 endif
+	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/shelter"
+	@sudo install -m 0755 kbs/shelter/build-local-kbs.sh "$(PREFIX)/libexec/shelter/kbs/shelter"
 
 ifeq ($(IS_DEBIAN), true)
-	@install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
-	@install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter/kbs"
+	@sudo install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
+	@sudo install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter/kbs"
 else ifeq ($(IS_DEBIAN), false)
-	@install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/libexec/shelter"
-	@install -m 0755 libexec/redhat/kbs "$(PREFIX)/libexec/shelter/kbs"
+	@sudo install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/libexec/shelter"
+	@sudo install -m 0755 libexec/redhat/kbs "$(PREFIX)/libexec/shelter/kbs"
 endif
+
+	@sudo install -m 0755 libexec/cbmkpasswd "$(PREFIX)/libexec/shelter"
+	@sudo install -m 0755 kbs/shelter/encp-encoder "$(PREFIX)/libexec/shelter/kbs/shelter"
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \

@@ -1,0 +1,63 @@
+#!/bin/sh
+
+[ -z "${SALT}" ] && SALT="shelter-local-kbs-salt"
+[ -z "${ITER}" ] && ITER=1000
+
+encp="$1"
+if [ -z "${encp}" ]; then
+    exit 1
+fi
+
+substr() {
+    local str="$1"
+    local start=$(($2 + 1))
+    local end=$(($2 + $3))
+    echo -ne "${str}" | cut -c "${start}"-"${end}"
+}
+
+magic="$(substr "${encp}" 0 4)"
+if [ "${magic}" != "ENCP" ]; then
+    exit 0
+fi
+
+ikm="$2"
+if [ -z "${ikm}" ]; then
+    # Derive IKM
+    ikm="$(cbmkpasswd --salt "${SALT}" --iter "${ITER}" -n 256)"
+fi
+
+# Extract 16-byte IV, 32-byte wrapping key and 32-byte hmac key from IKM
+iv="$(substr "${ikm}" 0 32)"
+wrap_key="$(substr "${ikm}" 32 64)"
+hmac_key="$(substr "${ikm}" 96 64)"
+
+# Extract the length, encrypted data and tag from ENCP bundle
+len="$(substr "${encp}" 4 8)"
+len="$(echo "ibase=16; ${len} * 2" | bc)"
+enc_data="$(substr "${encp}" 12 ${len})"
+off="$((len + 12))"
+tag="$(substr "${encp}" ${off} 64)"
+
+# Check the integrity
+auth_tag="$(echo -ne "${enc_data}" | xxd -p -r | openssl dgst \
+  -sha256 -binary \
+  -hmac "${hmac_key}" | xxd -p | tr -d "\n")"
+if [ "${tag}" != "${auth_tag}" ]; then
+    echo "Integrity check failed" >&2
+    exit 1
+fi
+
+# Print salt, IV and key
+echo -ne "${enc_data}" | xxd -p -r | openssl enc \
+  -d -aes-256-cbc -nosalt -P \
+  -iv "${iv}" \
+  -K "${wrap_key}" >&2
+
+# Decrypt passphrase
+echo -ne "${enc_data}" | xxd -p -r | openssl enc \
+  -d -aes-256-cbc -nosalt \
+  -iv "${iv}" \
+  -K "${wrap_key}" | xxd -p | tr -d "\n" || {
+    echo "Failed to decrypt passphrase" >&2
+    exit 1
+  }

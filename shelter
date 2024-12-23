@@ -15,7 +15,9 @@ SHELTER_DATA_DIR="/var/lib/shelter"
 # Indicate whether the stage resource should be destroyed
 SHELTER_CLEAN_FLAG="false"
 
-ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup" "kbs-client")
+ESSENTIAL_BINARIES=("socat" "busybox" "kmod" "cryptsetup" \
+                    "kbs-client" "encp-decoder" "cbmkpasswd" \
+                    "openssl")
 ESSENTIAL_FILES=()
 
 # Timeout for rcS getting started to listen vsock
