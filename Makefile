@@ -289,13 +289,9 @@ install-kbs: # Install the KBS artifacts
 	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/attestation-service"
 	@sudo install -m 0755 kbs/policy.rego "$(PREFIX)/libexec/shelter/kbs"
 	@sudo install -m 0755 kbs/config.toml.template "$(PREFIX)/libexec/shelter/kbs"
-	@sudo install -m 0755 start-kbs.sh "$(PREFIX)/bin"
-ifeq ($(IS_APSARA), true)
-	@sudo chmod u+s "$(PREFIX)/libexec/shelter/kbs/kbs"
-endif
+	@sudo install -m 0755 kbs/start-kbs "$(PREFIX)/libexec/shelter/kbs"
 	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/shelter"
 	@sudo install -m 0755 kbs/shelter/build-local-kbs.sh "$(PREFIX)/libexec/shelter/kbs/shelter"
-
 ifeq ($(IS_DEBIAN), true)
 	@sudo install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
 	@sudo install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter/kbs"
@@ -303,13 +299,15 @@ else ifeq ($(IS_DEBIAN), false)
 	@sudo install -m 0755 libexec/redhat/kbs-client "$(PREFIX)/libexec/shelter"
 	@sudo install -m 0755 libexec/redhat/kbs "$(PREFIX)/libexec/shelter/kbs"
 endif
-
+ifeq ($(IS_APSARA), true)
+	@sudo chmod u+s "$(PREFIX)/libexec/shelter/kbs/kbs"
+endif
 	@sudo install -m 0755 libexec/cbmkpasswd "$(PREFIX)/libexec/shelter"
 	@sudo install -m 0755 kbs/shelter/encp-encoder "$(PREFIX)/libexec/shelter/kbs/shelter"
 
 uninstall: # Uninstall the build artifacts
 	@cd "$(PREFIX)/bin" && { \
-	  sudo rm -f shelter start-kbs.sh; \
+	  sudo rm -f shelter; \
 	} || true
 
 	@sudo rm -rf "$(CONFIG_DIR)"
@@ -335,7 +333,7 @@ test: # Run verify-signature demo with shelter
 	    -c ./demos/verify-signature/build.conf \
 	    -T disk \
 	    -P "$$p" && \
-	  PASSPHRASE="$$p" ./start-kbs.sh && \
+	  PASSPHRASE="$$p" $(PREFIX)/libexec/shelter/kbs/start-kbs && \
 	  ./shelter run \
 	    -c "$(PREFIX)/libexec/shelter/kbs/shelter.conf" \
 		-v demos/verify-signature/payload:/payload \
