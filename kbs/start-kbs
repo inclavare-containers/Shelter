@@ -2,7 +2,6 @@
 
 # Parameters required for SHELTER_KBS=0
 KBS_DIR="${KBS_DIR:-/usr/local/libexec/shelter/kbs}"
-PASSPHRASE="${PASSPHRASE:-}"
 KBS_ADDRESS="${KBS_ADDRESS:-127.0.0.1}"
 # Parameters required for SHELTER_KBS=1
 KBS_PORT="${KBS_PORT:-6773}"

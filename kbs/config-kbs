@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Specify the target KBS address from the perspective of KBS client.
+# - KBS client in Guest: an external IP address out of local system, or the
+#   special IP address 10.0.2.2 indicating the gateway/host IP used in QEMU
+#   user network SLIRP. The IP address is got from kernel commandline.
+# - KBS client on Host: a localhost address or an external IP address out of
+#   the local system.
+KBS_ADDRESS="${KBS_ADDRESS:-10.0.2.2}"
+KBS_PORT="${KBS_PORT:-6773}"
+KBS_DIR="${KBS_DIR:-/usr/local/libexec/shelter/kbs}"
+SHELTER_CONF="${SHELTER_CONF:-/etc/shelter.conf}"
+PASSPHRASE_PATH="${PASSPHRASE_PATH:-default/shelter/passphrase}"
+# Encoded to hex string
+PASSPHRASE="${PASSPHRASE:-}"
+# Required parameters if PASSPHRASE specified
+PRIVATE_KEY_PATH="${PRIVATE_KEY_PATH:=${KBS_DIR}/private.key}"
+
+# Step 1: configure KBS_URL and PASSPHRASE_PATH for shelter configuration
+
+kern_cmdline="KBS_URL=http://${KBS_ADDRESS}:${KBS_PORT}"
+
+# Tune into the sed pattern
+pattern_kbs_url="$(echo "${kern_cmdline}" | sed 's|/|\\/|g')"
+pattern_kbs_url="/kern_cmdline =/ s|\\\"$| ${pattern_kbs_url}\\\"|"
+
+kern_cmdline="PASSPHRASE_PATH=${PASSPHRASE_PATH}"
+pattern_passphrase="$(echo "${kern_cmdline}" | sed 's|/|\\/|g')"
+pattern_passphrase="/kern_cmdline =/ s|\\\"$| ${pattern_passphrase}\\\"|"
+
+sudo sh -c \
+  "sed -e \"/kern_cmdline =/ s|KBS_URL=\S*||g\" -e \"${pattern_kbs_url}\" -e \"/kern_cmdline =/ s|PASSPHRASE_PATH=\S*||g\" -e \"${pattern_passphrase}\" \"${SHELTER_CONF}\""
+
+if [ -z "${PASSPHRASE}" ]; then
+    exit 0
+fi
+
+# Step 2: register the passphrase resource
+
+if [ "${KBS_ADDRESS}" == "10.0.2.2" ]; then
+    kbs_addr=127.0.0.1
+else
+    kbs_addr="${KBS_ADDRESS}"
+fi
+
+if ! nc -z -w 5 "${kbs_addr}" "${KBS_PORT}"; then
+    echo "Failed to connect KBS service ${kbs_addr}:${KBS_PORT}" >&2
+    exit 1
+fi
+
+passphrase="$(mktemp)"
+
+sudo sh -c \
+  "echo -ne \"${PASSPHRASE}\" | xxd -p -r >\"${passphrase}\""
+
+${KBS_DIR}/../kbs-client \
+  --url "http://${kbs_addr}:${KBS_PORT}" \
+  config --auth-private-key "${PRIVATE_KEY_PATH}" \
+  set-resource \
+    --resource-file "${passphrase}" \
+    --path "${PASSPHRASE_PATH}" >&2
+
+rm -f "${passphrase}"

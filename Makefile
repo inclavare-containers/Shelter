@@ -290,6 +290,7 @@ install-kbs: # Install the KBS artifacts
 	@sudo install -m 0755 kbs/policy.rego "$(PREFIX)/libexec/shelter/kbs"
 	@sudo install -m 0755 kbs/config.toml.template "$(PREFIX)/libexec/shelter/kbs"
 	@sudo install -m 0755 kbs/start-kbs "$(PREFIX)/libexec/shelter/kbs"
+	@sudo install -m 0755 kbs/config-kbs "$(PREFIX)/libexec/shelter/kbs"
 	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/shelter"
 	@sudo install -m 0755 kbs/shelter/build-local-kbs.sh "$(PREFIX)/libexec/shelter/kbs/shelter"
 ifeq ($(IS_DEBIAN), true)
@@ -328,21 +329,25 @@ test: # Run verify-signature demo with shelter
 
 	@echo -e "\033[1;31mRunning the DEMO verify-signature in shelter guest ...\033[0m"
 	@p="$$(mktemp)"; echo -n "Test" > "$$p"; \
+	  hex_p="$$(echo -n "Test" | xxd -p | tr -d "\n")"; \
+	  conf="$$(mktemp)"; \
 	  ./shelter build \
 	    -t shelter-demos \
 	    -c ./demos/verify-signature/build.conf \
 	    -T disk \
 	    -P "$$p" && \
-	  PASSPHRASE="$$p" $(PREFIX)/libexec/shelter/kbs/start-kbs && \
+	  ./kbs/start-kbs && \
+	  PASSPHRASE="$${hex_p}" ./kbs/config-kbs >"$${conf}" && \
 	  ./shelter run \
-	    -c "$(PREFIX)/libexec/shelter/kbs/shelter.conf" \
+	    -c "$${conf}" \
 		-v demos/verify-signature/payload:/payload \
 		shelter-demos \
 	    verifier.sh \
 	      /keys/public_key.pem \
 	      /payload/archive.tar.gz.sig \
-	      /payload/archive.tar.gz; \
-	  rm -f "$$p"
+	      /payload/archive.tar.gz
+	@systemctl --user stop kbs.service 2>/dev/null
+	@rm -f "$$p" "$${conf}"
 
 all: # Equivalent to make prepare build install
 	@make prepare build install
