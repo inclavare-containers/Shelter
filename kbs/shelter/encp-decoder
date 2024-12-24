@@ -1,6 +1,6 @@
 #!/bin/sh
 
-[ -z "${SALT}" ] && SALT="shelter-local-kbs-salt"
+[ -z "${SALT}" ] && SALT="shelter-kbs-salt"
 [ -z "${ITER}" ] && ITER=1000
 
 encp="$1"

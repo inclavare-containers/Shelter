@@ -2,11 +2,12 @@
 
 KBS_DIR="${KBS_DIR:-/usr/local/libexec/shelter/kbs}"
 KBS_PORT="${KBS_PORT:-6773}"
-NAME="${NAME:=shelter-kbs}"
-SALT="${SALT:-shelter-shelter-kbs-salt}"
-ITER=${ITER:-1000}
+NAME="${NAME:-shelter-kbs}"
 PASSPHRASE="${PASSPHRASE:-}"
 PASSPHRASE_PATH="${PASSPHRASE_PATH:-default/shelter/passphrase}"
+
+salt="shelter-kbs-salt"
+iter=1000
 
 d="$(mktemp -d /tmp/build-shelter-kbs-XXXXXX)"
 
@@ -56,7 +57,7 @@ EOF
     ikm="$(LOG_LEVEL=0 shelter run \
       -c "${conf}" \
       cbmkpasswd -- \
-      "cbmkpasswd --salt "${SALT}" --iter "${ITER}" -n 256")"
+      "cbmkpasswd --salt "${salt}" --iter "${iter}" -n 256")"
     if [ $? -ne 0 ]; then
         echo "Failed to run cbmkpasswd image"
         exit 1
