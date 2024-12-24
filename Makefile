@@ -357,7 +357,7 @@ sync: # Sync up this source code
 	@git submodule update --init
 
 clean_all: clean uninstall
-	@rm -rf /var/tmp/mkosi-workspace-* /var/lib/shelter/images/*
+	@rm -rf /var/tmp/mkosi-workspace-* /var/lib/shelter/images/* /var/run/shelter/*
 
 _build_container: FORCE # Create the Shelter container image
 ifeq ($(IS_DEBIAN), true)
