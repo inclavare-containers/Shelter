@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 
+SHELTER_KBS="${SHELTER_KBS:-0}"
 # Parameters required for SHELTER_KBS=0
 KBS_DIR="${KBS_DIR:-/usr/local/libexec/shelter/kbs}"
+# Specify the KBS listening address from the perspective of KBS server.
+# - KBS server on local Host: use 127.0.0.1 to accept the local requests.
+# - KBS server on remote Host: use 0.0.0.0 to accept the external requests.
+# Note that the mode where KBS server runs in Guest is not configured by
+# this program. By the way it always use 0.0.0.0 to allow port forwarder
+# from QEMU.
 KBS_ADDRESS="${KBS_ADDRESS:-127.0.0.1}"
-# Parameters required for SHELTER_KBS=1
+
+# Common parameters
 KBS_PORT="${KBS_PORT:-6773}"
-SHELTER_KBS="${SHELTER_KBS:-0}"
+NAME="${NAME:-kbs}"
 
 d=/var/run/kbs
 if [ ! -d "$d" ]; then
@@ -23,11 +31,11 @@ trap_handler() {
     fi
 
     if [ ${SHELTER_KBS} -eq 0 ] && [ ${err} -ne 0 ]; then
-        systemctl --user stop kbs.service
-
-        # TODO: use shred -u to delete
-        sudo sh -c "rm -rf \"$d\""
+        systemctl --user stop "${NAME}".service
     fi
+
+    # TODO: use shred -u to delete
+    sudo sh -c "rm -rf \"$d\""
 
     exit ${err}
 }
@@ -36,7 +44,7 @@ trap 'trap_handler $LINENO $?' SIGINT SIGTERM EXIT ERR
 
 if [ ${SHELTER_KBS} -eq 1 ]; then
     # Stop KBS service if launched already
-    shelter stop local-kbs 2>/dev/null
+    shelter stop "${NAME}" 2>/dev/null
 
     conf=/etc/shelter.conf
     kbs_conf="${conf}"
@@ -51,7 +59,7 @@ if [ ${SHELTER_KBS} -eq 1 ]; then
     shelter run \
       -c "${kbs_conf}" \
       -p ${KBS_PORT}:${KBS_PORT} \
-      local-kbs \
+      "${NAME}" \
         /sbin/kbs -c /kbs/config.toml &
 
     # Await for KBS service getting ready
@@ -61,8 +69,8 @@ if [ ${SHELTER_KBS} -eq 1 ]; then
 fi
 
 # Stop KBS service if launched already
-systemctl --user -q is-active kbs.service && \
-  systemctl --user stop kbs.service
+systemctl --user -q is-active "${NAME}.service" && \
+  systemctl --user stop "${NAME}.service"
 
 [ ! -s "${KBS_DIR}/private.key" ] && \
     sudo sh -c "openssl genpkey -algorithm ed25519 >\"${KBS_DIR}/private.key\""
@@ -77,7 +85,7 @@ fi
 
 sudo sh -c "sed \"/sockets =/ s/KBS_ADDRESS:KBS_PORT/${listen_address}:${KBS_PORT}/\" \"${KBS_DIR}/config.toml.template\" > \"$d/config.toml\""
 
-systemd-run --user --description="KBS Server" --unit="kbs" \
+systemd-run --user --description="KBS Server" --unit="${NAME}" \
   -G "${KBS_DIR}/kbs" -c "$d/config.toml" && \
   echo "KBS service started" || {
     echo "Failed to start KBS service"
