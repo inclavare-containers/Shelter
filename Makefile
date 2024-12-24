@@ -31,7 +31,7 @@ ifeq ($(IS_APSARA), true)
 endif
 
 .PHONE: help FORCE prepare build clean install uninstall test all sync \
-    _build_container container install-kbs
+    clean_all _build_container container install-kbs
 
 help:
 	@grep -E '^[a-zA-Z][a-zA-Z0-9_-]+:.*?# .*$$' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*?# "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -292,7 +292,7 @@ install-kbs: # Install the KBS artifacts
 	@sudo install -m 0755 kbs/start-kbs "$(PREFIX)/libexec/shelter/kbs"
 	@sudo install -m 0755 kbs/config-kbs "$(PREFIX)/libexec/shelter/kbs"
 	@sudo install -D -d 0755 "$(PREFIX)/libexec/shelter/kbs/shelter"
-	@sudo install -m 0755 kbs/shelter/build-local-kbs.sh "$(PREFIX)/libexec/shelter/kbs/shelter"
+	@sudo install -m 0755 kbs/shelter/build-shelter-kbs.sh "$(PREFIX)/libexec/shelter/kbs/shelter"
 ifeq ($(IS_DEBIAN), true)
 	@sudo install -m 0755 libexec/debian/kbs-client "$(PREFIX)/libexec/shelter"
 	@sudo install -m 0755 libexec/debian/kbs "$(PREFIX)/libexec/shelter/kbs"
@@ -336,8 +336,8 @@ test: # Run verify-signature demo with shelter
 	    -c ./demos/verify-signature/build.conf \
 	    -T disk \
 	    -P "$$p" && \
-	  ./kbs/start-kbs && \
-	  PASSPHRASE="$${hex_p}" ./kbs/config-kbs >"$${conf}" && \
+	  NAME=local-kbs-demo ./kbs/start-kbs && \
+	  NAME=local-kbs-demo PASSPHRASE="$${hex_p}" ./kbs/config-kbs >"$${conf}" && \
 	  ./shelter run \
 	    -c "$${conf}" \
 		-v demos/verify-signature/payload:/payload \
@@ -346,7 +346,7 @@ test: # Run verify-signature demo with shelter
 	      /keys/public_key.pem \
 	      /payload/archive.tar.gz.sig \
 	      /payload/archive.tar.gz
-	@systemctl --user stop kbs.service 2>/dev/null
+	@systemctl --user stop local-kbs-demo.service 2>/dev/null
 	@rm -f "$$p" "$${conf}"
 
 all: # Equivalent to make prepare build install
@@ -355,6 +355,9 @@ all: # Equivalent to make prepare build install
 sync: # Sync up this source code
 	@git pull --recurse
 	@git submodule update --init
+
+clean_all: clean uninstall
+	@rm -rf /var/tmp/mkosi-workspace-* /var/lib/shelter/images/*
 
 _build_container: FORCE # Create the Shelter container image
 ifeq ($(IS_DEBIAN), true)
