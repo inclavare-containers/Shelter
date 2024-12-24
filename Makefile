@@ -50,7 +50,7 @@ ifeq ($(IS_DEBIAN), false)
 	mkosi_deps="+python3.11 bubblewrap kernel-core cryptsetup coreutils \
 	            rsync"; \
 	shelter_run_deps="coreutils sudo procps-ng gawk systemd socat qemu-kvm \
-	                  glib2 util-linux"; \
+	                  glib2 util-linux nmap-ncat"; \
 	make_test_deps="coreutils tar openssl"; \
 	install_pkg() { \
 	  for p in "$$@"; do \
