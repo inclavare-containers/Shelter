@@ -44,13 +44,13 @@ ifeq ($(IS_DEBIAN), false)
 	@make_all_deps="coreutils grep gawk sudo python3-pip python3-pysocks \
 	                util-linux"; \
 	make_extra_deps="git +podman-docker coreutils"; \
-	shelter_kbs_deps="coreutils grep sed +cloudbox openssl vim-common"; \
+	shelter_kbs_build_deps="coreutils grep sed +cloudbox openssl vim-common bc"; \
 	shelter_build_deps="coreutils gawk diffutils rsync glibc-common file \
 	                    grep sed socat +busybox kmod cryptsetup"; \
 	mkosi_deps="+python3.11 bubblewrap kernel-core cryptsetup coreutils \
 	            rsync"; \
 	shelter_run_deps="coreutils sudo procps-ng gawk systemd socat qemu-kvm \
-	                  glib2 util-linux vim-common +cloudbox bc openssl"; \
+	                  glib2 util-linux"; \
 	make_test_deps="coreutils tar openssl"; \
 	install_pkg() { \
 	  for p in "$$@"; do \
@@ -72,13 +72,13 @@ ifeq ($(IS_DEBIAN), false)
 	}; \
 	sudo true && \
 	  install_pkg $${make_all_deps} $${make_test_deps} $${make_extra_deps} \
-	    $${shelter_kbs_deps} $${shelter_build_deps} $${mkosi_deps} \
+	    $${shelter_kbs_build_deps} $${shelter_build_deps} $${mkosi_deps} \
 	    $${shelter_run_deps}
 else
 	@make_all_deps="apt-utils coreutils grep gawk sudo python3-pip \
 	                python3-socks util-linux"; \
 	make_extra_deps="git coreutils"; \
-	shelter_kbs_deps="coreutils grep sed +cloudbox openssl vim-common"; \
+	shelter_kbs_build_deps="coreutils grep sed +cloudbox openssl vim-common"; \
 	shelter_build_deps="sudo diffutils rsync sed systemd socat busybox-static \
 	                    kmod cryptsetup bubblewrap zstd libuuid1 \
 	                    libdevmapper1.02.1 libssl3 libcrypt1 libjson-c5 \
@@ -107,7 +107,7 @@ else
 	}; \
 	sudo apt update && \
 	  install_pkg $${make_all_deps} $${make_test_deps} $${make_extra_deps} \
-	    $${shelter_kbs_deps} $${shelter_build_deps} $${mkosi_deps} \
+	    $${shelter_kbs_build_deps} $${shelter_build_deps} $${mkosi_deps} \
 	    $${shelter_run_deps}
 endif
 
