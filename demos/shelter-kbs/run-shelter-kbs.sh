@@ -51,6 +51,8 @@ else
     exit 1
 fi
 
+echo "Shelter KBS private key: "${priv_key}""
+
 # Step 2: run the shelter KBS DEMO image
 
 SHELTER_KBS=1 \
