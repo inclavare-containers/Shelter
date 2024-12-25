@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PATH=$PATH:/usr/local/bin:/usr/local/libexec/shelter
+export PATH=$PATH:/usr/local/bin:/usr/local/libexec/shelter
 
 BUSYBOX="/usr/bin/busybox"
 [ ! -x "$BUSYBOX" ] && BUSYBOX="/usr/sbin/busybox"
