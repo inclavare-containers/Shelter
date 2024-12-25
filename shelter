@@ -655,25 +655,29 @@ start() {
                     return 1
                 fi
                 ;;
+            # Don't specify image id
+            --)
+                prepare_image "default"
+                break
+                ;;
+            # May specify image id
             *)
+                # Check whether the image id exists
+                if prepare_image "$1"; then
+                    shift
+                fi
                 break
                 ;;
         esac
         shift
     done
 
-    # Check whether the image id is specified
-    if prepre_image "$1"; then
+    if [[ "$1" == "--" ]]; then
         shift
     fi
 
     # Gather the commands to run
-    while [ "$#" -gt 0 ]; do
-        opts+=("$1")
-        shift
-    done
-
-    COMMANDS=${opts[@]}
+    COMMANDS=("$@")
 
     if is-active; then
         error "The image ${IMAGE_ID} is already started"
@@ -804,12 +808,8 @@ run() {
         return 1
     fi
 
-    if [[ $1 == "--" ]]; then
-        shift
-    fi
-
-    debug "Run commands in guest: '${COMMANDS}'"
-    exec ${COMMANDS}
+    debug "Run commands in guest: '${COMMANDS[@]}'"
+    exec ${COMMANDS[@]}
 
     stop
 }
@@ -924,7 +924,7 @@ image_exists() {
     fi
 }
 
-prepre_image() {
+prepare_image() {
     local image_id="$1"
 
     if [[ "${image_id}" == -* ]]; then
@@ -975,7 +975,7 @@ main() {
             start "$@"
             ;;
         stop)
-            if prepre_image "$1"; then
+            if prepare_image "$1"; then
                 shift
             fi 
             stop
@@ -984,7 +984,7 @@ main() {
             build "$@"
             ;;
         status)
-            if prepre_image "$1"; then
+            if prepare_image "$1"; then
                 shift
             fi 
             status
@@ -993,13 +993,13 @@ main() {
             run "$@"
             ;;
         exec)
-            if prepre_image "$1"; then
+            if prepare_image "$1"; then
                 shift
             fi 
             exec "$@"
             ;;
         clean)
-            if prepre_image "$1"; then
+            if prepare_image "$1"; then
                 shift
             fi 
             clean
