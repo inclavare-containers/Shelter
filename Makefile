@@ -346,7 +346,7 @@ test: # Run verify-signature demo with shelter
 	      /keys/public_key.pem \
 	      /payload/archive.tar.gz.sig \
 	      /payload/archive.tar.gz
-	@systemctl --user stop local-kbs-demo.service 2>/dev/null
+	@systemctl --user stop local-kbs-demo.service 2>/dev/null || true
 	@rm -f "$$p" "$${conf}"
 
 all: # Equivalent to make prepare build install
