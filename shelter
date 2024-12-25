@@ -222,6 +222,11 @@ store_stage() {
 get_stage() {
     local name="$1"
 
+    if [ ! -d "${SHELTER_STAGE_DIR}" ]; then
+        echo ""
+        return
+    fi
+
     if [ -s "${SHELTER_STAGE_DIR}/${name}" ]; then
         echo "$(sudo cat ${SHELTER_STAGE_DIR}/${name})"
     fi
