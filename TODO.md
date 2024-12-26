@@ -4,8 +4,10 @@
 
 - 支持用户运行相同Image的多个实例。
 
-- 从够libkrun的实现。
+- 重构libkrun的实现。
 
 - 支持Confidential AI Demo。
 
-- 安全地生成和销毁随机生成的passphrase。
+- 需要大幅度缩小基于mkosi工具制作出的镜像大小。
+
+- 限制可执行的命令。
