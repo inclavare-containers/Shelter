@@ -263,6 +263,11 @@ endif
 	fi
 
 ifeq ($(IS_DEBIAN), true)
+	@if ! command -v busybox >/dev/null; then \
+	    sudo install -m 0755 libexec/debian/busybox "$(PREFIX)/libexec/shelter"; \
+	else \
+	    true; \
+	fi
 	@sudo install -m 0755 libexec/debian/virtiofsd "$(PREFIX)/libexec/shelter"
 	@sudo install -D -m 0755 libexec/debian/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
 	@sudo install -D -m 0755 libexec/debian/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
@@ -271,6 +276,11 @@ ifeq ($(IS_DEBIAN), true)
 	@sudo ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12"
 	@sudo ln -sfn "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so.12.10.0" "$(PREFIX)/libexec/shelter/systemd/lib/x86_64-linux-gnu/systemd/libcryptsetup.so"
 else ifeq ($(IS_DEBIAN), false)
+	@if ! command -v busybox >/dev/null; then \
+	    sudo install -m 0755 libexec/redhat/busybox "$(PREFIX)/libexec/shelter"; \
+	else \
+	    true; \
+	fi
 	@sudo install -m 0755 libexec/redhat/virtiofsd "$(PREFIX)/libexec/shelter"
 	@sudo install -D -m 0755 libexec/redhat/systemd/bin/systemd-repart "$(PREFIX)/libexec/shelter/systemd/bin/systemd-repart"
 	@sudo install -D -m 0755 libexec/redhat/systemd/bin/systemd-cryptsetup "$(PREFIX)/libexec/shelter/systemd/bin/systemd-cryptsetup"
