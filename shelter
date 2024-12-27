@@ -701,6 +701,10 @@ start() {
         exit 1
     fi
 
+    if [ ! -d "${SHELTER_STAGE_DIR}" ]; then
+        sudo mkdir -p "${SHELTER_STAGE_DIR}"
+    fi
+
     local virtiofs_nr=0
     for _i in "${volumes[@]}"; do
         local src
