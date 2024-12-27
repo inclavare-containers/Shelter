@@ -9,14 +9,12 @@ journalctl -f
 # 解密加密磁盘镜像
 
 ```shell
-mkdir disk rootfs
-losetup -f --show var/lib/shelter/images/asi-verifier/disk.raw
+losetup -f --show /var/lib/shelter/images/shelter-demos/disk.raw
 partprobe /dev/loop0
-echo -ne "${PASSPHRASE}" | \
-  xxd -p -r | \
-  cryptsetup open -d - /dev/loop0p1 root
-mount /dev/mapper/root fs
-ls fs
+echo -n "Test" | cryptsetup open -d - /dev/loop0p1 root
+mkdir rootfs
+mount /dev/mapper/root rootfs
+ls rootfs
 ```
 
 ---
