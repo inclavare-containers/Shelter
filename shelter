@@ -78,7 +78,7 @@ create_dir() {
     local dir_path="$1"
 
     if [ ! -d "${SHELTER_EXTRA_DIR}/$dir_path" ]; then
-        mkdir -p "${SHELTER_EXTRA_DIR}/${dir_path}"
+        sudo mkdir -p "${SHELTER_EXTRA_DIR}/${dir_path}"
     fi
 }
 
@@ -121,7 +121,7 @@ copy_file_and_dir_no_resolve_symlink() {
     debug "Copying ${src_path} -> ${SHELTER_EXTRA_DIR}/${dst_path} ..."
 
     create_dir "$(dirname $dst_path)"
-    rsync -ap --links "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}"
+    sudo rsync -ap --links "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}"
 }
 
 # Function to copy file (dir is not handled)
@@ -147,7 +147,7 @@ copy_file_resolve_symlink() {
         debug "Copying ${src_path} -> ${SHELTER_EXTRA_DIR}/${dst_path} ..."
 
         create_dir "$(dirname $dst_path)"
-        rsync -a --links "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}"
+        sudo rsync -a --links "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}"
         return
     fi
 
@@ -156,7 +156,7 @@ copy_file_resolve_symlink() {
         debug "Copying ${src_path} -> ${SHELTER_EXTRA_DIR}/${dst_path} ..."
 
         create_dir "$(dirname $dst_path)"
-        cp -a -f -p "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}"
+        sudo cp -a -f -p "${src_path}" "${SHELTER_EXTRA_DIR}/${dst_path}"
         return
     fi
 
@@ -297,9 +297,9 @@ build() {
     debug "Gather files to be copied into $SHELTER_EXTRA_DIR"
 
     if [ ! -d "$SHELTER_EXTRA_DIR" ]; then
-        mkdir -p "$SHELTER_EXTRA_DIR"
+        sudo mkdir -p "$SHELTER_EXTRA_DIR"
     else
-        rm -rf "$SHELTER_EXTRA_DIR"/*
+        sudo rm -rf "$SHELTER_EXTRA_DIR"/*
     fi
 
     local binaries=()
@@ -367,18 +367,18 @@ build() {
     if [ "$image_type" = "disk" ]; then
         debug "Building initrd for Disk image: ${SHELTER_INITRD}"
 
-        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi \
-          -f --debug -C "${SHELTER_DISK_CONF_DIR}" \
+        sudo sh -c "${SHELTER_BIN_DIR}/mkosi/bin/mkosi \
+          -f --debug -C \"${SHELTER_DISK_CONF_DIR}\" \
           --format=cpio \
           --environment=STAGE=CPIO \
-          --postinst-script="${SHELTER_DISK_CONF_DIR}/mkosi.postinst" \
-          --output-dir="${SHELTER_IMAGE_DIR}" \
-          --output="$(basename ${SHELTER_INITRD})" \
-          --extra-tree="${SHELTER_EXTRA_DIR}:/extra" \
-          --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
-          --package="${packages[@]}" \
-          --extra-search-path="${SHELTER_BIN_DIR}/systemd/bin" \
-          build
+          --postinst-script=\"${SHELTER_DISK_CONF_DIR}/mkosi.postinst\" \
+          --output-dir=\"${SHELTER_IMAGE_DIR}\" \
+          --output=\"$(basename ${SHELTER_INITRD})\" \
+          --extra-tree=\"${SHELTER_EXTRA_DIR}:/extra\" \
+          --extra-tree=\"/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}\" \
+          --package=\"${packages[@]}\" \
+          --extra-search-path=\"${SHELTER_BIN_DIR}/systemd/bin\" \
+          build"
         if [ $? -ne 0 ]; then
             error "Error: failed to build initrd for disk image with mkosi"
             exit 1
@@ -424,17 +424,17 @@ build() {
     if [ "$image_type" = "initrd" ]; then
         debug "Building Initrd image: ${SHELTER_INITRD}"
 
-        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi \
-          -f --debug -C "${SHELTER_INITRD_CONF_DIR}" \
-          --build-script="${SHELTER_INITRD_CONF_DIR}/mkosi.build" \
-          --finalize-script="${SHELTER_INITRD_CONF_DIR}/mkosi.finalize" \
-          --postinst-script="${SHELTER_INITRD_CONF_DIR}/mkosi.postinst" \
-          --output-dir="${SHELTER_IMAGE_DIR}" \
-          --output="$(basename ${SHELTER_INITRD})" \
-          --extra-tree="${SHELTER_EXTRA_DIR}:/extra" \
-          --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
-          --package="${packages[@]}" \
-          build
+        sudo sh -c "${SHELTER_BIN_DIR}/mkosi/bin/mkosi \
+          -f --debug -C \"${SHELTER_INITRD_CONF_DIR}\" \
+          --build-script=\"${SHELTER_INITRD_CONF_DIR}/mkosi.build\" \
+          --finalize-script=\"${SHELTER_INITRD_CONF_DIR}/mkosi.finalize\" \
+          --postinst-script=\"${SHELTER_INITRD_CONF_DIR}/mkosi.postinst\" \
+          --output-dir=\"${SHELTER_IMAGE_DIR}\" \
+          --output=\"$(basename ${SHELTER_INITRD})\" \
+          --extra-tree=\"${SHELTER_EXTRA_DIR}:/extra\" \
+          --extra-tree=\"/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}\" \
+          --package=\"${packages[@]}\" \
+          build"
         if [ $? -ne 0 ]; then
             error "Error: failed to build initrd image with mkosi"
             exit 1
@@ -457,21 +457,21 @@ build() {
 
         debug "Building Disk image: ${SHELTER_DISK}"
 
-        ${SHELTER_BIN_DIR}/mkosi/bin/mkosi \
-          -f --debug -C "${SHELTER_DISK_CONF_DIR}" \
+        sudo sh -c "${SHELTER_BIN_DIR}/mkosi/bin/mkosi \
+          -f --debug -C \"${SHELTER_DISK_CONF_DIR}\" \
           --format=disk \
           --environment=STAGE=DISK \
-          --build-script="${SHELTER_DISK_CONF_DIR}/mkosi.build" \
-          --finalize-script="${SHELTER_DISK_CONF_DIR}/mkosi.finalize" \
-          --postinst-script="${SHELTER_DISK_CONF_DIR}/mkosi.postinst" \
-          --output-dir="${SHELTER_IMAGE_DIR}" \
-          --output="$(basename ${SHELTER_DISK})" \
-          --extra-tree="${SHELTER_EXTRA_DIR}:/extra" \
-          --extra-tree="/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}" \
-          --passphrase="${passphrase}" \
-          --repart-dir="${SHELTER_DISK_CONF_DIR}/mkosi.repart" \
-          --extra-search-path="${SHELTER_BIN_DIR}/systemd/bin" \
-          build
+          --build-script=\"${SHELTER_DISK_CONF_DIR}/mkosi.build\" \
+          --finalize-script=\"${SHELTER_DISK_CONF_DIR}/mkosi.finalize\" \
+          --postinst-script=\"${SHELTER_DISK_CONF_DIR}/mkosi.postinst\" \
+          --output-dir=\"${SHELTER_IMAGE_DIR}\" \
+          --output=\"$(basename ${SHELTER_DISK})\" \
+          --extra-tree=\"${SHELTER_EXTRA_DIR}:/extra\" \
+          --extra-tree=\"/usr/lib/modules/${kernel_version}:/usr/lib/modules/${kernel_version}\" \
+          --passphrase=\"${passphrase}\" \
+          --repart-dir=\"${SHELTER_DISK_CONF_DIR}/mkosi.repart\" \
+          --extra-search-path=\"${SHELTER_BIN_DIR}/systemd/bin\" \
+          build"
         local r=$?
         [ ${new_p} -eq 1 ] && rm -f "${passphrase}"
         if [ $r -ne 0 ]; then
@@ -885,7 +885,7 @@ exec() {
 }
 
 clean() {
-    ${SHELTER_BIN_DIR}/mkosi/bin/mkosi clean
+    sudo sh -c "${SHELTER_BIN_DIR}/mkosi/bin/mkosi clean"
     rm -rf "${SHELTER_EXTRA_DIR}"
 }
 
