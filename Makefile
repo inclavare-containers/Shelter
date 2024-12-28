@@ -31,7 +31,7 @@ ifeq ($(IS_APSARA), true)
 endif
 
 .PHONE: help FORCE prepare build clean install uninstall test all sync \
-    clean_all _build_container container install-kbs
+    mrproper _build_container container install-kbs
 
 help:
 	@grep -E '^[a-zA-Z][a-zA-Z0-9_-]+:.*?# .*$$' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*?# "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -366,8 +366,9 @@ sync: # Sync up this source code
 	@git pull --recurse
 	@git submodule update --init
 
-clean_all: clean uninstall
-	@rm -rf /var/tmp/mkosi-workspace-* /var/lib/shelter/images/* /var/run/shelter/*
+mrproper: clean uninstall # Remove all of shelter related artifacts
+	@sudo rm -rf /var/tmp/mkosi-workspace-* /var/lib/shelter/images/* \
+	  /var/run/shelter/*
 
 _build_container: FORCE # Create the Shelter container image
 ifeq ($(IS_DEBIAN), true)
