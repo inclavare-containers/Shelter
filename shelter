@@ -237,7 +237,7 @@ get_stage() {
 build() {
     # mkosi uses $USER to decide the ownerships of workspace
     if [ "$USER" != "root" ]; then
-        warn "WARNING: Running shelter build with root privileges is generally necessary. Try `sudo su -`."
+        warn "WARNING: Running shelter build with root privileges is generally necessary. Try \"sudo su -\"."
     fi
 
     # The default image type is initrd
