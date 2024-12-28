@@ -954,19 +954,6 @@ main() {
         exit 1
     fi
 
-    # Check for --help or -h options
-    for arg in "$@"; do
-        case $arg in
-            -h|--help)
-                show_help
-                exit 0
-                ;;
-            --)
-                break
-                ;;
-        esac
-    done
-
     [ -z "${XDG_RUNTIME_DIR}" ] && export XDG_RUNTIME_DIR="/run/user/$(id -u)"
     [ -z "${DBUS_SESSION_BUS_ADDRESS}" ] && export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
 
