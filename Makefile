@@ -41,17 +41,13 @@ FORCE:
 
 prepare: # Install the build and runtime dependencies (network access required)
 ifeq ($(IS_DEBIAN), false)
-	@make_all_deps="coreutils grep gawk sudo python3-pip python3-pysocks \
-	                util-linux"; \
-	make_extra_deps="git +podman-docker coreutils"; \
-	shelter_kbs_build_deps="coreutils grep sed +cloudbox openssl vim-common bc"; \
-	shelter_build_deps="coreutils gawk diffutils rsync glibc-common file \
-	                    grep sed socat +busybox kmod cryptsetup"; \
-	mkosi_deps="+python3.11 bubblewrap kernel-core cryptsetup coreutils \
-	            rsync"; \
-	shelter_run_deps="coreutils sudo procps-ng gawk systemd socat qemu-kvm \
-	                  glib2 util-linux nmap-ncat"; \
-	make_test_deps="coreutils tar openssl"; \
+	@make_all_deps=""; \
+	make_extra_deps="git +podman-docker"; \
+	shelter_kbs_build_deps="+cloudbox"; \
+	shelter_build_deps="rsync socat +busybox cryptsetup"; \
+	mkosi_deps="+python3.11 bubblewrap cryptsetup rsync"; \
+	shelter_run_deps="socat qemu-kvm glib2 nmap-ncat"; \
+	make_test_deps=""; \
 	install_pkg() { \
 	  for p in "$$@"; do \
 	    local _p="$$p"; \
