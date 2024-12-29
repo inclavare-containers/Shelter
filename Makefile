@@ -55,7 +55,7 @@ ifeq ($(IS_DEBIAN), false)
 	    rpm -q "$$_p" >/dev/null 2>&1 && \
 	      yum check-update "$$_p" >/dev/null 2>&1 && continue; \
 	    echo "Installing the package \"$$_p\" ..."; \
-	    sudo yum install --best -y "$$_p"; \
+	    sudo yum install -y "$$_p"; \
 	    if [ $$? -ne 0 ]; then \
 	      if [ "$_p" != "$p" ]; then \
 	        echo "Skip installing the absent package \"$$_p\""; \
