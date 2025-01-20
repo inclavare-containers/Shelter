@@ -89,21 +89,107 @@ make container
 ---
 Usage: shelter {subcommand}
 Available SubCommands:
-    build   Build the shelter
-    start   Start the shelter
-    stop    Stop the shelter
-    exec    exec a shell commad in shelter
-    status  Query the status of shelter
+    build   Build a shelter image
     clean   Remove output image and cache
-    images  show the images built by shelter
+    images  Show the images built by shelter
+    start   Start a shelter instace with specified shelter image
+    stop    Stop a shelter instance
+    exec    Execute a command in a shelter instance
+    run     Run the command with specified shelter image
+    status  Query the status of shelter
 
 Options:
     -h, --help  Show this help message and exit
 ~~~
 
-Shelter默认构建的initramfs的发行版版本与host一致，支持的发行版有`debian`，`arch`，`opensuse`，`ubuntu`，`centos`，`rocky`，`alma`，`fedora`，`rhel-ubi`，`mageia`和`openmandriva`。
+Shelter默认构建的initramfs的发行版版本与host一致，通过mkosi工具可以支持的发行版有`debian`，`arch`，`opensuse`，`ubuntu`，`centos`，`rocky`，`alma`，`fedora`，`rhel-ubi`，`mageia`和`openmandriva`以及`Aliyun Linux 3`。
 
 通过配置[build.conf](./build.conf)文件，可以实现在执行Shelter构建时将指定的文件和二进制文件复制到initramfs中，并且可以自动复制其依赖的.so文件。
+
+#### build命令
+
+构建一个shelter镜像。
+
+用法：
+```shell
+shelter build [options]
+```
+
+- `-c/--config <path>`: 表示用于构建shelter镜像的配置文件路径。
+- `-T/--image-type <disk|initrd>`: 表示待构建的shelter镜像的类型；合法值为initrd和disk。
+- `-t/--tag <image_id>`: 表示要构建的shelter镜像的image id；默认值为`default`。
+- `-P/--passphrase <path>`: 表示包含了制作加密disk镜像时使用的secret的文件路径。
+
+#### clean命令
+
+清除mkosi构建缓存。
+
+用法：
+```shell
+shelter clean <image_id>
+```
+
+#### images命令
+
+查看当前所有的shelter镜像信息。
+
+用法：
+```shell
+shelter images
+```
+
+#### start命令
+
+启动shelter实例运行指定的shelter镜像。
+
+用法：
+```shell
+shelter start [options] [image_id] [--] commands
+```
+
+- `-v/--volume <src_path>[:<dst_path>]`: 表示要透传到shelter实例中的host文件路径；如果不指定`<dst_path>`，默认值与`<src_path>`相同。
+- `-p/--port <port>`: 表示要透传到shelter实例中的host端口号；默认情况下不透传任何host端口到shelter实例中。
+- `-c/--config <path>`: 表示shelter的配置文件路径；默认值为`/etc/shelter.conf`。
+- `image_id`: 表示要运行的镜像名称；默认值为`default`。
+- `commands`: 表示要在shelter实例中执行的命令。
+
+#### stop命令
+
+启动shelter实例。
+
+用法：
+```shell
+shelter stop [image_id]
+```
+
+#### exec命令
+
+执行start指定的命令。
+
+用法：
+```shell
+shelter exec [image_id]
+```
+
+#### run命令
+
+在shelter实例中运行指定的命令。
+
+用法：
+```shell
+shelter run [options] [image_id] [--] commands
+```
+
+具体用法详见start命令。本质上，run命令是start+exec+stop。
+
+#### status命令
+
+检查shelter实例是否处于运行状态。
+
+用法：
+```shell
+shelter status [image_id]
+```
 
 ### 配置Shelter
 

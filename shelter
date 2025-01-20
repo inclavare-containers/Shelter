@@ -47,13 +47,13 @@ show_help() {
 Usage: shelter [Options] SubCommand
 Available SubCommands:
     build   Build a shelter image
+    clean   Remove output image and cache
+    images  Show the images built by shelter
     start   Start a shelter instace with specified shelter image
     stop    Stop a shelter instance
     exec    Execute a command in a shelter instance
     run     Run the command with specified shelter image
     status  Query the status of shelter
-    clean   Remove output image and cache
-    images  Show the images built by shelter
 
 Options:
     -h, --help  Show this help message and exit
