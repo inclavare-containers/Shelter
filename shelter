@@ -46,13 +46,14 @@ show_help() {
     cat <<EOF
 Usage: shelter [Options] SubCommand
 Available SubCommands:
-    build   Build the shelter
-    start   Start the shelter
-    stop    Stop the shelter
-    exec    exec a shell commad in shelter
+    build   Build a shelter image
+    start   Start a shelter instace with specified shelter image
+    stop    Stop a shelter instance
+    exec    Execute a command in a shelter instance
+    run     Run the command with specified shelter image
     status  Query the status of shelter
     clean   Remove output image and cache
-    images  show the images built by shelter
+    images  Show the images built by shelter
 
 Options:
     -h, --help  Show this help message and exit
