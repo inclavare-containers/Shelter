@@ -55,17 +55,17 @@ Shelter是一个将应用沙箱化的启动器。
     也可以分步执行：
     - 创建shelter实例
       ~~~sh
-      shelter $image_id start
+      shelter start $image_id
       ~~~
 
     - 在创建的shelter实例中运行镜像中的指定命令
       ~~~sh
-      shelter $image_id exec cat /proc/cmdline
+      shelter exec $image_id cat /proc/cmdline
       ~~~
 
     - 停止shelter实例
       ~~~sh
-      shelter $image_id stop
+      shelter stop $image_id
       ~~~
     > image_id 为需要启动的image的id，默认为default 
 
@@ -126,7 +126,7 @@ shelter build [options]
 
 用法：
 ```shell
-shelter clean <image_id>
+shelter clean
 ```
 
 #### images命令
@@ -162,14 +162,19 @@ shelter start [options] [image_id] [--] commands
 shelter stop [image_id]
 ```
 
+- `image_id`: 表示要停止的镜像名称；默认值为`default`。
+
 #### exec命令
 
 执行start指定的命令。
 
 用法：
 ```shell
-shelter exec [image_id]
+shelter exec [image_id] commands
 ```
+
+- `image_id`: 表示目标镜像名称；默认值为`default`。
+- `commands`: 表示要在shelter实例中执行的命令。
 
 #### run命令
 
@@ -190,6 +195,8 @@ shelter run [options] [image_id] [--] commands
 ```shell
 shelter status [image_id]
 ```
+
+- `image_id`: 表示要检查的镜像名称；默认值为`default`。
 
 ### 配置Shelter
 

@@ -991,9 +991,6 @@ main() {
             exec "$@"
             ;;
         clean)
-            if prepare_image "$1"; then
-                shift
-            fi 
             clean
             ;;
         images)
