@@ -685,7 +685,7 @@ start() {
         exit 1
     fi
 
-    SHELTER_CLEAN_FLAG="true"
+    SHELTER_CLEAN_FLAG="false"
 
     if [ x"$(get_image_info image_type)" = x"" ]; then
         error "The file ${SHELTER_STAGE_DIR}/image_type is missing. You may need to run 'shelter build' first."
