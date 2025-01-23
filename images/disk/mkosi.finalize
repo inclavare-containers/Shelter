@@ -24,3 +24,8 @@ fi
 if [ -f "${BUILDROOT}/usr/lib/modules/${kernel_version}/vmlinuz" ]; then
     rm "${BUILDROOT}/usr/lib/modules/${kernel_version}/vmlinuz"
 fi
+
+## delete locale-archive
+if [ -f $BUILDROOT/usr/lib/locale/locale-archive ]; then
+    rm -v $BUILDROOT/usr/lib/locale/locale-archive*
+fi
