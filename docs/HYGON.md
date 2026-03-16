@@ -1,5 +1,12 @@
 # 支持海光CSV
 
+## 配置内核参数
+
+```shell
+sudo grubby --update-kernel=ALL --args="amd_iommu=on csv_mem_percentage=50 kvm_amd.sev_es=1 kvm_amd.sev=1"
+sudo reboot
+```
+
 ## 通过shelter运行CSV guest
 
 
